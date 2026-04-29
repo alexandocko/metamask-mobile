@@ -171,6 +171,12 @@
       "prettier --write"
     ]
   },
+  "previewBuilds": {
+    "@metamask/transaction-controller": {
+      "type": "breaking",
+      "previewVersion": "65.0.0-preview-156c8ccf7"
+    }
+  },
   "resolutions": {
     "@metamask/network-controller": "31.0.0",
     "@react-native-community/viewpager": "patch:@react-native-community/viewpager@npm%3A3.3.0#~/.yarn/patches/@react-native-community-viewpager-npm-3.3.0.patch",

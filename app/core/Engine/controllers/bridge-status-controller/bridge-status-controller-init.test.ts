@@ -224,7 +224,7 @@ describe('BridgeStatusController Init', () => {
       addTransactionBatchFn(mockTxBatch);
       expect(
         mockTransactionController.addTransactionBatch,
-      ).toHaveBeenCalledWith(mockTxBatch);
+      ).toHaveBeenCalledWith({ ...mockTxBatch, isInternal: true });
     });
 
     it('handles undefined persistedState', () => {

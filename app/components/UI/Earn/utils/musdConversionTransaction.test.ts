@@ -300,6 +300,7 @@ describe('musdConversionTransaction', () => {
           skipInitialGasEstimate: true,
           networkClientId,
           origin: ORIGIN_METAMASK,
+          isInternal: true,
           type: TransactionType.musdConversion,
         },
       );
@@ -525,6 +526,7 @@ describe('musdConversionTransaction', () => {
           skipInitialGasEstimate: true,
           networkClientId: 'networkClientId',
           origin: ORIGIN_METAMASK,
+          isInternal: true,
           type: TransactionType.musdConversion,
         },
       );
