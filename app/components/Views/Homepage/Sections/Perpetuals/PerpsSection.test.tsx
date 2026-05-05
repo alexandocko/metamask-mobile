@@ -244,6 +244,7 @@ const makeTrendingMarket = (overrides: Record<string, unknown> = {}) => ({
   change24h: '+$2,000',
   change24hPercent: '+4.00%',
   volume: '$2.5B',
+  openInterest: '$500M',
   volumeNumber: 2500000000,
   ...overrides,
 });
@@ -644,6 +645,7 @@ describe('PerpsSection', () => {
       change24h: '+$2,000',
       change24hPercent: '+4.00%',
       volume: '$2.5B',
+      openInterest: '$500M',
       volumeNumber: 2500000000,
       ...overrides,
     });
@@ -834,6 +836,7 @@ describe('PerpsSection', () => {
       change24h: '+$2,000',
       change24hPercent: '+4.00%',
       volume: '$2.5B',
+      openInterest: '$500M',
       volumeNumber: 2500000000,
       ...overrides,
     });
