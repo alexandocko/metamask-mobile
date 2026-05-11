@@ -1,3 +1,4 @@
+import { decode } from '@metamask/abi-utils';
 import {
   IsAtomicBatchSupportedRequest,
   TransactionController,
@@ -5,7 +6,16 @@ import {
 } from '@metamask/transaction-controller';
 import { SignMessenger, getDelegationTransaction } from './delegation';
 import { MOCK_ANY_NAMESPACE, Messenger } from '@metamask/messenger';
-import { Hex } from '@metamask/utils';
+import { Hex, bytesToHex, remove0x } from '@metamask/utils';
+import {
+  BATCH_DEFAULT_MODE,
+  SINGLE_DEFAULT_MODE,
+  getDeleGatorEnvironment,
+} from '../../core/Delegation';
+import {
+  REDEEM_DELEGATIONS_SELECTOR,
+  encodeRedeemDelegations,
+} from '../../core/Delegation/delegation';
 
 const mockGetNonceLock = jest.fn();
 
@@ -177,6 +187,182 @@ describe('Transaction Delegation Utils', () => {
       await expect(
         getDelegationTransaction(messengerMock, TRANSACTION_META_MOCK),
       ).rejects.toThrow('Upgrade contract address not found');
+    });
+
+    describe('nested redeemDelegations flattening', () => {
+      const MAINNET_DELEGATION_MANAGER = getDeleGatorEnvironment(
+        1,
+      ).DelegationManager.toLowerCase() as Hex;
+
+      const INNER_CONTEXT = '0xaabb' as Hex;
+      const INNER_CALLDATA = '0xccdd' as Hex;
+
+      const buildInnerRedeemCalldata = (): Hex =>
+        encodeRedeemDelegations({
+          delegations: [],
+          modes: [],
+          executions: [],
+          extraContexts: [INNER_CONTEXT],
+          extraModes: [SINGLE_DEFAULT_MODE],
+          extraCalldatas: [INNER_CALLDATA],
+        });
+
+      const decodeOuter = (
+        outerData: Hex,
+      ): { contexts: Hex[]; modes: Hex[]; calldatas: Hex[] } => {
+        const payload = `0x${remove0x(outerData).slice(8)}` as Hex;
+        const [contexts, modes, calldatas] = decode(
+          ['bytes[]', 'bytes32[]', 'bytes[]'],
+          payload,
+        ) as [Uint8Array[], Uint8Array[], Uint8Array[]];
+        return {
+          contexts: contexts.map(bytesToHex),
+          modes: modes.map(bytesToHex),
+          calldatas: calldatas.map(bytesToHex),
+        };
+      };
+
+      it('flattens an inner redeemDelegations into additional outer slots', async () => {
+        const innerRedeem = buildInnerRedeemCalldata();
+        const regularTx = {
+          data: '0xdeadbeef' as Hex,
+          to: '0x1111111111111111111111111111111111111111' as Hex,
+        };
+
+        const result = await getDelegationTransaction(messengerMock, {
+          ...TRANSACTION_META_MOCK,
+          nestedTransactions: [
+            {
+              data: innerRedeem,
+              to: MAINNET_DELEGATION_MANAGER,
+            },
+            regularTx,
+          ],
+        } as TransactionMeta);
+
+        const outer = decodeOuter(result.data);
+
+        expect(outer.contexts).toHaveLength(2);
+        expect(outer.modes).toHaveLength(2);
+        expect(outer.calldatas).toHaveLength(2);
+        expect(outer.contexts[1]).toBe(INNER_CONTEXT);
+        expect(outer.modes[1]).toBe(SINGLE_DEFAULT_MODE);
+        expect(outer.calldatas[1]).toBe(INNER_CALLDATA);
+      });
+
+      it('signs the outer delegation only over the non-redeem nested transactions', async () => {
+        const innerRedeem = buildInnerRedeemCalldata();
+        const regularTx = {
+          data: '0xdeadbeef' as Hex,
+          to: '0x1111111111111111111111111111111111111111' as Hex,
+        };
+
+        await getDelegationTransaction(messengerMock, {
+          ...TRANSACTION_META_MOCK,
+          nestedTransactions: [
+            { data: innerRedeem, to: MAINNET_DELEGATION_MANAGER },
+            regularTx,
+          ],
+        } as TransactionMeta);
+
+        expect(signDelegationMock).toHaveBeenCalledTimes(1);
+        const [signCall] = signDelegationMock.mock.calls;
+        const signedDelegation = signCall[0].delegation;
+        expect(signedDelegation.caveats).toHaveLength(2);
+      });
+
+      it('uses SINGLE mode when only one regular nested transaction remains after flattening', async () => {
+        const innerRedeem = buildInnerRedeemCalldata();
+        const regularTx = {
+          data: '0xdeadbeef' as Hex,
+          to: '0x1111111111111111111111111111111111111111' as Hex,
+        };
+
+        const result = await getDelegationTransaction(messengerMock, {
+          ...TRANSACTION_META_MOCK,
+          nestedTransactions: [
+            { data: innerRedeem, to: MAINNET_DELEGATION_MANAGER },
+            regularTx,
+          ],
+        } as TransactionMeta);
+
+        const outer = decodeOuter(result.data);
+        expect(outer.modes[0]).toBe(SINGLE_DEFAULT_MODE);
+      });
+
+      it('does not flatten nested redeemDelegations when target is not the DelegationManager', async () => {
+        const innerRedeem = buildInnerRedeemCalldata();
+        const result = await getDelegationTransaction(messengerMock, {
+          ...TRANSACTION_META_MOCK,
+          nestedTransactions: [
+            {
+              data: innerRedeem,
+              to: '0x2222222222222222222222222222222222222222' as Hex,
+            },
+          ],
+        } as TransactionMeta);
+
+        const outer = decodeOuter(result.data);
+        expect(outer.contexts).toHaveLength(1);
+        expect(signDelegationMock).toHaveBeenCalledTimes(1);
+      });
+
+      it('does not flatten when nested tx data does not start with the redeemDelegations selector', async () => {
+        const result = await getDelegationTransaction(messengerMock, {
+          ...TRANSACTION_META_MOCK,
+          nestedTransactions: [
+            {
+              data: '0xdeadbeef' as Hex,
+              to: MAINNET_DELEGATION_MANAGER,
+            },
+          ],
+        } as TransactionMeta);
+
+        const outer = decodeOuter(result.data);
+        expect(outer.contexts).toHaveLength(1);
+      });
+
+      it('passes through inner contexts unchanged when only inner redeemDelegations are present', async () => {
+        const innerRedeem = buildInnerRedeemCalldata();
+        const result = await getDelegationTransaction(messengerMock, {
+          ...TRANSACTION_META_MOCK,
+          nestedTransactions: [
+            { data: innerRedeem, to: MAINNET_DELEGATION_MANAGER },
+          ],
+        } as TransactionMeta);
+
+        const outer = decodeOuter(result.data);
+        expect(outer.contexts).toEqual([INNER_CONTEXT]);
+        expect(outer.modes).toEqual([SINGLE_DEFAULT_MODE]);
+        expect(outer.calldatas).toEqual([INNER_CALLDATA]);
+        expect(signDelegationMock).not.toHaveBeenCalled();
+      });
+
+      it('selects the correct selector for a redeemDelegations nested tx', () => {
+        expect(REDEEM_DELEGATIONS_SELECTOR).toBe('0xcef6d209');
+      });
+
+      it('uses BATCH mode when multiple regular nested transactions remain after flattening', async () => {
+        const innerRedeem = buildInnerRedeemCalldata();
+        const result = await getDelegationTransaction(messengerMock, {
+          ...TRANSACTION_META_MOCK,
+          nestedTransactions: [
+            { data: innerRedeem, to: MAINNET_DELEGATION_MANAGER },
+            {
+              data: '0xdeadbeef' as Hex,
+              to: '0x1111111111111111111111111111111111111111' as Hex,
+            },
+            {
+              data: '0xfeedface' as Hex,
+              to: '0x3333333333333333333333333333333333333333' as Hex,
+            },
+          ],
+        } as TransactionMeta);
+
+        const outer = decodeOuter(result.data);
+        expect(outer.modes[0]).toBe(BATCH_DEFAULT_MODE);
+        expect(outer.contexts).toHaveLength(2);
+      });
     });
   });
 });

@@ -1,5 +1,7 @@
+import { decode } from '@metamask/abi-utils';
 import {
   AuthorizationList,
+  NestedTransactionMetadata,
   TransactionMeta,
   decodeAuthorizationSignature,
 } from '@metamask/transaction-controller';
@@ -16,11 +18,12 @@ import {
 import {
   ANY_BENEFICIARY,
   Delegation,
+  REDEEM_DELEGATIONS_SELECTOR,
   UnsignedDelegation,
   createDelegation,
   encodeRedeemDelegations,
 } from '../../core/Delegation/delegation';
-import { Hex, createProjectLogger } from '@metamask/utils';
+import { Hex, add0x, bytesToHex, createProjectLogger, remove0x } from '@metamask/utils';
 import { limitedCalls } from '../../core/Delegation/caveatBuilder/limitedCallsBuilder';
 import { Messenger } from '@metamask/messenger';
 import { DelegationControllerSignDelegationAction } from '@metamask/delegation-controller';
@@ -46,6 +49,12 @@ export interface DelegationTransaction {
   value: Hex;
 }
 
+interface FlattenedRedemption {
+  contexts: Hex[];
+  modes: Hex[];
+  calldatas: Hex[];
+}
+
 export async function getDelegationTransaction<
   MessengerType extends SignMessenger,
 >(
@@ -58,24 +67,49 @@ export async function getDelegationTransaction<
   const delegationManagerAddress =
     delegationEnvironment.DelegationManager as Hex;
 
-  const delegations = await buildDelegation(
-    delegationEnvironment,
-    transaction,
-    messenger,
+  const { regularTransactions, flattened } = partitionNestedTransactions(
+    transaction.nestedTransactions ?? [],
+    delegationManagerAddress,
   );
 
-  const executions = buildExecutions(transaction);
+  if (flattened.contexts.length > 0) {
+    log('Flattening nested redeemDelegations slots', {
+      flattenedCount: flattened.contexts.length,
+      regularCount: regularTransactions.length,
+    });
+  }
 
-  const modes: ExecutionMode[] = [
-    executions[0].length > 1 ? BATCH_DEFAULT_MODE : SINGLE_DEFAULT_MODE,
-  ];
+  // Outer delegation authorises only the non-redeem slots; flattened slots carry their own permission contexts.
+  const outerTransaction: TransactionMeta = {
+    ...transaction,
+    nestedTransactions: regularTransactions,
+  };
 
-  log('Built delegations', { delegations, modes, executions });
+  const outerDelegations = regularTransactions.length
+    ? await buildDelegation(delegationEnvironment, outerTransaction, messenger)
+    : [];
+
+  const outerExecutions = regularTransactions.length
+    ? buildExecutions(outerTransaction)
+    : [];
+
+  const outerModes: ExecutionMode[] = regularTransactions.length
+    ? [regularTransactions.length > 1 ? BATCH_DEFAULT_MODE : SINGLE_DEFAULT_MODE]
+    : [];
+
+  log('Built delegations', {
+    delegations: outerDelegations,
+    modes: outerModes,
+    executions: outerExecutions,
+  });
 
   const transactionData = encodeRedeemDelegations({
-    delegations,
-    modes,
-    executions,
+    delegations: outerDelegations,
+    modes: outerModes,
+    executions: outerExecutions,
+    extraContexts: flattened.contexts,
+    extraModes: flattened.modes,
+    extraCalldatas: flattened.calldatas,
   });
 
   const authorizationList = await buildAuthorizationList(
@@ -89,6 +123,98 @@ export async function getDelegationTransaction<
     to: delegationManagerAddress,
     value: '0x0',
   };
+}
+
+/**
+ * Splits the nested transactions into transactions that the outer delegation
+ * must authorise and pre-encoded redeemDelegations slots that can be merged
+ * into the outer redeemDelegations call directly. This avoids the cost of
+ * wrapping an already-authorised redeemDelegations inside another delegation.
+ *
+ * @param nestedTransactions - The transaction's nestedTransactions array.
+ * @param delegationManagerAddress - The DelegationManager address for the
+ * current chain. Used to identify nested redeemDelegations calls.
+ */
+function partitionNestedTransactions(
+  nestedTransactions: NestedTransactionMetadata[],
+  delegationManagerAddress: Hex,
+): {
+  regularTransactions: NestedTransactionMetadata[];
+  flattened: FlattenedRedemption;
+} {
+  const regularTransactions: NestedTransactionMetadata[] = [];
+  const flattened: FlattenedRedemption = {
+    contexts: [],
+    modes: [],
+    calldatas: [],
+  };
+
+  for (const tx of nestedTransactions) {
+    const decoded = decodeRedeemDelegationsCall(tx, delegationManagerAddress);
+
+    if (!decoded) {
+      regularTransactions.push(tx);
+      continue;
+    }
+
+    flattened.contexts.push(...decoded.contexts);
+    flattened.modes.push(...decoded.modes);
+    flattened.calldatas.push(...decoded.calldatas);
+  }
+
+  return { regularTransactions, flattened };
+}
+
+/**
+ * Returns the decoded (contexts, modes, calldatas) tuple if the nested
+ * transaction is a redeemDelegations call to the DelegationManager on the
+ * current chain. Returns undefined otherwise.
+ */
+function decodeRedeemDelegationsCall(
+  tx: NestedTransactionMetadata,
+  delegationManagerAddress: Hex,
+): FlattenedRedemption | undefined {
+  const { data, to } = tx;
+
+  if (!data || !to) {
+    return undefined;
+  }
+
+  if (to.toLowerCase() !== delegationManagerAddress.toLowerCase()) {
+    return undefined;
+  }
+
+  if (!data.toLowerCase().startsWith(REDEEM_DELEGATIONS_SELECTOR)) {
+    return undefined;
+  }
+
+  const SELECTOR_HEX_CHARS = 8;
+  const payload = `0x${remove0x(data).slice(SELECTOR_HEX_CHARS)}` as Hex;
+
+  try {
+    const [rawContexts, rawModes, rawCalldatas] = decode(
+      ['bytes[]', 'bytes32[]', 'bytes[]'],
+      payload,
+    ) as [Uint8Array[], Uint8Array[], Uint8Array[]];
+
+    return {
+      contexts: rawContexts.map(toHexBytes),
+      modes: rawModes.map(toHexBytes),
+      calldatas: rawCalldatas.map(toHexBytes),
+    };
+  } catch (error) {
+    log('Failed to decode nested redeemDelegations, falling back to nesting', {
+      error,
+    });
+    return undefined;
+  }
+}
+
+function toHexBytes(value: Uint8Array | string): Hex {
+  if (typeof value === 'string') {
+    return add0x(value) as Hex;
+  }
+  return bytesToHex(value);
 }
 
 async function buildAuthorizationList<MessengerType extends SignMessenger>(
