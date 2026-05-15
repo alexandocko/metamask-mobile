@@ -50,12 +50,14 @@ import useHomeViewedEvent, {
 } from '../../hooks/useHomeViewedEvent';
 import { useSectionPerformance } from '../../hooks/useSectionPerformance';
 import type { PerpsSectionProps } from './PerpsSectionWithProvider';
+import { HOMEPAGE_PERPS_PILLS_AB_EXPOSED_ANALYTICS_PROPERTY } from '../../abTestConfig';
 import HomepageSectionUnrealizedPnlRow, {
   type HomepageUnrealizedPnlTone,
 } from '../../components/HomepageSectionUnrealizedPnlRow';
 import { useHomepageTrendingTransactionActiveAbTests } from '../../hooks/useHomepageTrendingTransactionActiveAbTests';
 import { WalletViewSelectorsIDs } from '../../../../Views/Wallet/WalletView.testIds';
 import { usePerpsNavigationHandlers } from './hooks/usePerpsNavigationHandlers';
+import { useHomepagePerpsPillsEmptyTransactionActiveAbTests } from '../../hooks/useHomepagePerpsPillsEmptyTransactionActiveAbTests';
 
 const MAX_ITEMS = 5;
 const MAX_TRENDING_MARKETS = 5;
@@ -192,12 +194,6 @@ const PerpsSectionMain = forwardRef<SectionRefreshHandle, PerpsSectionProps>(
       usePerpsConnection();
     const { track } = usePerpsEventTracking();
     const privacyMode = useSelector(selectPrivacyMode);
-    const {
-      navigateToTutorialOrScreen,
-      handleViewAllPerps,
-      handleViewMorePerps,
-      handleTilePress,
-    } = usePerpsNavigationHandlers();
 
     const { positions, isInitialLoading: positionsLoading } =
       usePerpsLivePositions({
@@ -245,6 +241,37 @@ const PerpsSectionMain = forwardRef<SectionRefreshHandle, PerpsSectionProps>(
     );
 
     const hasItems = displayPositions.length > 0 || displayOrders.length > 0;
+
+    const trendingTransactionActiveAbTests =
+      useHomepageTrendingTransactionActiveAbTests();
+    const perpsPillsEmptyTransactionActiveAbTests =
+      useHomepagePerpsPillsEmptyTransactionActiveAbTests(!hasItems);
+    const {
+      navigateToTutorialOrScreen,
+      handleViewAllPerps,
+      handleViewMorePerps,
+      handleTilePress,
+    } = usePerpsNavigationHandlers({
+      trendingTransactionActiveAbTests,
+      extraTransactionActiveAbTests: perpsPillsEmptyTransactionActiveAbTests,
+    });
+
+    const handleTrendingMarketPress = useCallback(
+      (market: PerpsMarketData) => {
+        track(MetaMetricsEvents.PERPS_UI_INTERACTION, {
+          [PERPS_EVENT_PROPERTY.INTERACTION_TYPE]:
+            PERPS_EVENT_VALUE.INTERACTION_TYPE.BUTTON_CLICKED,
+          [PERPS_EVENT_PROPERTY.BUTTON_CLICKED]:
+            PERPS_EVENT_VALUE.BUTTON_CLICKED.OPEN_POSITION,
+          [PERPS_EVENT_PROPERTY.BUTTON_LOCATION]:
+            PERPS_EVENT_VALUE.BUTTON_LOCATION.WALLET_HOME,
+          [HOMEPAGE_PERPS_PILLS_AB_EXPOSED_ANALYTICS_PROPERTY]: true,
+        });
+        handleTilePress(market);
+      },
+      [handleTilePress, track],
+    );
+
     const hasFilledPositions = positions.length > 0;
 
     // When user has no positions/orders, keep skeleton visible until markets load.
@@ -338,6 +365,10 @@ const PerpsSectionMain = forwardRef<SectionRefreshHandle, PerpsSectionProps>(
       totalSectionsLoaded,
       isEmpty,
       itemCount,
+      additionalProperties:
+        analyticsName === HomeSectionNames.PERPS && !hasItems
+          ? { [HOMEPAGE_PERPS_PILLS_AB_EXPOSED_ANALYTICS_PROPERTY]: true }
+          : undefined,
     });
 
     useSectionPerformance({
@@ -425,7 +456,7 @@ const PerpsSectionMain = forwardRef<SectionRefreshHandle, PerpsSectionProps>(
               markets={allCarouselMarkets}
               watchlistSymbolSet={watchlistSymbolSet}
               sparklines={sparklines}
-              onPressMarket={handleTilePress}
+              onPressMarket={handleTrendingMarketPress}
               onPressViewMore={handleViewMorePerps}
             />
           )}
