@@ -12,25 +12,15 @@ import {
 } from '@metamask/transaction-controller';
 import { Hex, createProjectLogger } from '@metamask/utils';
 import {
-  ANY_BENEFICIARY,
-  BATCH_DEFAULT_MODE,
   Caveat,
   DeleGatorEnvironment,
-  ExecutionMode,
   ExecutionStruct,
-  SINGLE_DEFAULT_MODE,
-  UnsignedDelegation,
   createCaveatBuilder,
-  createDelegation,
   getDeleGatorEnvironment,
 } from '../../../core/Delegation';
 import { exactExecution } from '../../../core/Delegation/caveatBuilder/exactExecutionBuilder';
 import { limitedCalls } from '../../../core/Delegation/caveatBuilder/limitedCallsBuilder';
 import { specificActionERC20TransferBatch } from '../../../core/Delegation/caveatBuilder/specificActionERC20TransferBatchBuilder';
-import {
-  Delegation,
-  encodeRedeemDelegations,
-} from '../../../core/Delegation/delegation';
 import { TransactionControllerInitMessenger } from '../../../core/Engine/messengers/transaction-controller-messenger';
 import {
   RelayStatus,
@@ -44,11 +34,13 @@ import {
   getClientForTransactionMetadata,
   sanitizeOrigin,
 } from '../../../constants/smartTransactions';
+import {
+  convertTransactionToRedeemDelegations,
+  normalizeCallData,
+} from '../delegation';
 
-// Test chain ID (Sepolia) used in E2E tests to match the delegation package's test contract configuration
 const SEPOLIA_CHAIN_ID = '0xaa36a7';
-const EMPTY_HEX = '0x';
-const POLLING_INTERVAL_MS = 1000; // 1 Second
+const POLLING_INTERVAL_MS = 1000;
 
 const EMPTY_RESULT = {
   transactionHash: undefined,
@@ -135,7 +127,6 @@ export class Delegation7702PublishHook {
       atomicBatchChainSupport;
 
     const isGaslessBridge = transactionMeta.isGasFeeIncluded;
-
     const isSponsored = Boolean(transactionMeta.isGasFeeSponsored);
 
     if (
@@ -160,42 +151,53 @@ export class Delegation7702PublishHook {
       throw new Error('Selected gas fee token not found');
     }
 
-    const delegationEnvironment = getDeleGatorEnvironment(
-      parseInt(isE2ETest(chainId) ? SEPOLIA_CHAIN_ID : chainId, 16),
-    );
-    const delegationManagerAddress = delegationEnvironment.DelegationManager;
-    const includeTransfer =
-      !isGaslessBridge && !transactionMeta.isGasFeeSponsored;
+    const includeTransfer = !isGaslessBridge && !transactionMeta.isGasFeeSponsored;
 
     if (includeTransfer && (!gasFeeToken || gasFeeToken === undefined)) {
       throw new Error('Gas fee token not found');
     }
 
-    const delegations = await this.#buildDelegation(
+    const effectiveChainId = isE2ETest(chainId) ? SEPOLIA_CHAIN_ID : chainId;
+    const delegationEnvironment = getDeleGatorEnvironment(
+      parseInt(effectiveChainId, 16),
+    );
+
+    const { to, value, data: txData } = txParams;
+    const normalizedTxData = normalizeCallData(txData);
+
+    const caveats = this.#buildCaveats(
       delegationEnvironment,
       transactionMeta,
       gasFeeToken,
       includeTransfer,
     );
 
-    const modes: ExecutionMode[] = [
-      includeTransfer ? BATCH_DEFAULT_MODE : SINGLE_DEFAULT_MODE,
-    ];
-    const executions = this.#buildExecutions(
-      transactionMeta,
-      gasFeeToken,
-      includeTransfer,
-    );
+    const userExecution: ExecutionStruct = {
+      target: to as Hex,
+      value: BigInt((value as Hex) ?? '0x0'),
+      callData: normalizedTxData,
+    };
 
-    const transactionData = encodeRedeemDelegations({
-      delegations,
-      modes,
-      executions,
-    });
+    const additionalExecutions: ExecutionStruct[] = includeTransfer && gasFeeToken
+      ? [userExecution, this.#buildTransferExecution(gasFeeToken)]
+      : [userExecution];
+
+    const { data, to: delegationManagerAddress } =
+      await convertTransactionToRedeemDelegations({
+        transaction: {
+          ...transactionMeta,
+          chainId: effectiveChainId as Hex,
+          nestedTransactions: [],
+        },
+        messenger: this.#messenger,
+        caveats,
+        additionalExecutions,
+        skipAuthorization: true,
+      });
 
     const relayRequest: RelaySubmitRequest = {
       chainId,
-      data: transactionData,
+      data,
       to: delegationManagerAddress,
       metadata: {
         txType: transactionMeta.type,
@@ -243,8 +245,6 @@ export class Delegation7702PublishHook {
       throw new Error(`Transaction relay error - ${status}`);
     }
 
-    // Mark 7702 relay transaction as intent complete so PendingTransactionTracker
-    // skips dropped checks
     log('Setting isIntentComplete after relay success', transactionMeta.id);
     const finalTxMeta = this.#messenger
       .call('TransactionController:getState')
@@ -266,68 +266,8 @@ export class Delegation7702PublishHook {
     };
   }
 
-  async #buildDelegation(
-    delegationEnvironment: DeleGatorEnvironment,
-    transactionMeta: TransactionMeta,
-    gasFeeToken: GasFeeToken | undefined,
-    includeTransfer: boolean,
-  ): Promise<Delegation[][]> {
-    const { chainId } = transactionMeta;
-    const unsignedDelegation = this.#buildUnsignedDelegation(
-      delegationEnvironment,
-      transactionMeta,
-      gasFeeToken,
-      includeTransfer,
-    );
-
-    log('Signing delegation');
-
-    const delegationSignature = (await this.#messenger.call(
-      'DelegationController:signDelegation',
-      {
-        chainId: isE2ETest(chainId) ? SEPOLIA_CHAIN_ID : chainId,
-        delegation: unsignedDelegation,
-      },
-    )) as Hex;
-
-    log('Delegation signature', delegationSignature);
-
-    const delegations: Delegation[][] = [
-      [
-        {
-          ...unsignedDelegation,
-
-          signature: delegationSignature,
-        },
-      ],
-    ];
-
-    return delegations;
-  }
-
-  #buildExecutions(
-    transactionMeta: TransactionMeta,
-    gasFeeToken: GasFeeToken | undefined,
-    includeTransfer: boolean,
-  ): ExecutionStruct[][] {
-    const { txParams } = transactionMeta;
-    const { data, to, value } = txParams;
-    const normalizedData = this.#normalizeCallData(data);
-    const userExecution: ExecutionStruct = {
-      target: to as Hex,
-      value: BigInt((value as Hex) ?? '0x0'),
-      callData: normalizedData,
-    };
-
-    if (!includeTransfer) {
-      return [[userExecution]];
-    }
-
-    if (!gasFeeToken) {
-      throw new Error('Selected gas fee token not found');
-    }
-
-    const transferExecution: ExecutionStruct = {
+  #buildTransferExecution(gasFeeToken: GasFeeToken): ExecutionStruct {
+    return {
       target: gasFeeToken.tokenAddress,
       value: BigInt('0x0'),
       callData: this.#buildTokenTransferData(
@@ -335,33 +275,6 @@ export class Delegation7702PublishHook {
         gasFeeToken.amount,
       ),
     };
-    return [[userExecution, transferExecution]];
-  }
-
-  #buildUnsignedDelegation(
-    environment: DeleGatorEnvironment,
-    transactionMeta: TransactionMeta,
-    gasFeeToken: GasFeeToken | undefined,
-    includeTransfer: boolean,
-  ): UnsignedDelegation {
-    const caveats = this.#buildCaveats(
-      environment,
-      transactionMeta,
-      gasFeeToken,
-      includeTransfer,
-    );
-
-    log('Caveats', caveats);
-
-    const delegation = createDelegation({
-      from: transactionMeta.txParams.from as Hex,
-      to: ANY_BENEFICIARY,
-      caveats,
-    });
-
-    log('Delegation', delegation);
-
-    return delegation;
   }
 
   #buildCaveats(
@@ -374,12 +287,11 @@ export class Delegation7702PublishHook {
 
     const { txParams } = transactionMeta;
     const { to, value, data } = txParams;
-    const normalizedData = this.#normalizeCallData(data);
+    const normalizedData = normalizeCallData(data);
 
     if (includeTransfer && gasFeeToken !== undefined) {
       const { tokenAddress, recipient, amount } = gasFeeToken;
 
-      // contract deployments can't be delegated
       if (to !== undefined) {
         caveatBuilder.addCaveat(
           specificActionERC20TransferBatch,
@@ -392,7 +304,6 @@ export class Delegation7702PublishHook {
         );
       }
     } else if (to !== undefined) {
-      // contract deployments can't be delegated
       caveatBuilder.addCaveat(
         exactExecution,
         to,
@@ -401,7 +312,6 @@ export class Delegation7702PublishHook {
       );
     }
 
-    // the relay may only execute this delegation once for security reasons
     caveatBuilder.addCaveat(limitedCalls, 1);
 
     return caveatBuilder.build();
@@ -456,31 +366,5 @@ export class Delegation7702PublishHook {
       recipient,
       amount,
     ]) as Hex;
-  }
-
-  #normalizeCallData(data: unknown): Hex {
-    if (typeof data !== 'string' || data.length === 0) {
-      return EMPTY_HEX;
-    }
-
-    const hasHexPrefix = data.slice(0, 2).toLowerCase() === '0x';
-    const normalizedData = data.toLowerCase();
-    const prefixed = hasHexPrefix
-      ? `0x${normalizedData.slice(2)}`
-      : `0x${normalizedData}`;
-    const hexBody = prefixed.slice(2);
-
-    if (hexBody.length === 0) {
-      return EMPTY_HEX;
-    }
-
-    if (hexBody.length % 2 !== 0) {
-      // The EVM works with byte arrays, and each byte is represented by exactly
-      // two hexadecimal characters. Ensure the hex string is byte-aligned by
-      // prefixing a leading zero.
-      return this.#normalizeCallData(`0x0${hexBody}`);
-    }
-
-    return prefixed as Hex;
   }
 }

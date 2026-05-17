@@ -4,7 +4,11 @@ import {
   TransactionController,
   TransactionMeta,
 } from '@metamask/transaction-controller';
-import { SignMessenger, getDelegationTransaction } from './delegation';
+import {
+  SignMessenger,
+  convertTransactionToRedeemDelegations,
+  getDelegationTransaction,
+} from './delegation';
 import { MOCK_ANY_NAMESPACE, Messenger } from '@metamask/messenger';
 import { Hex, bytesToHex, remove0x } from '@metamask/utils';
 import {
@@ -363,6 +367,84 @@ describe('Transaction Delegation Utils', () => {
         expect(outer.modes[0]).toBe(BATCH_DEFAULT_MODE);
         expect(outer.contexts).toHaveLength(2);
       });
+    });
+  });
+
+  describe('convertTransactionToRedeemDelegations', () => {
+    it('returns data and delegation manager address', async () => {
+      const result = await convertTransactionToRedeemDelegations({
+        transaction: TRANSACTION_META_MOCK,
+        messenger: messengerMock,
+      });
+
+      expect(result.data).toBeDefined();
+      expect(result.to).toBeDefined();
+      expect(result.authorizationList).toHaveLength(1);
+    });
+
+    it('skips authorization when skipAuthorization is true', async () => {
+      const result = await convertTransactionToRedeemDelegations({
+        transaction: TRANSACTION_META_MOCK,
+        messenger: messengerMock,
+        skipAuthorization: true,
+      });
+
+      expect(result.authorizationList).toBeUndefined();
+    });
+
+    it('uses provided caveats instead of deriving them', async () => {
+      const customCaveat = {
+        enforcer: '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef' as Hex,
+        terms: '0x' as Hex,
+        args: '0x' as Hex,
+      };
+
+      await convertTransactionToRedeemDelegations({
+        transaction: TRANSACTION_META_MOCK,
+        messenger: messengerMock,
+        caveats: [customCaveat],
+        skipAuthorization: true,
+      });
+
+      expect(signDelegationMock).toHaveBeenCalledWith({
+        chainId: TRANSACTION_META_MOCK.chainId,
+        delegation: expect.objectContaining({
+          caveats: [customCaveat],
+        }),
+      });
+    });
+
+    it('appends additionalExecutions to the execution batch without changing caveat count', async () => {
+      const extraAddress = '0x1111111111111111111111111111111111111111' as Hex;
+      const extra = {
+        target: extraAddress,
+        value: BigInt(0),
+        callData: '0x' as Hex,
+      };
+
+      await convertTransactionToRedeemDelegations({
+        transaction: TRANSACTION_META_MOCK,
+        messenger: messengerMock,
+        additionalExecutions: [extra],
+        skipAuthorization: true,
+      });
+
+      const [signCall] = signDelegationMock.mock.calls;
+      const signedDelegation = signCall[0].delegation;
+      expect(signedDelegation.caveats.length).toBeGreaterThan(0);
+    });
+
+    it('uses provided delegationSignature instead of calling messenger', async () => {
+      const precomputedSig = '0xdeadbeef' as Hex;
+
+      await convertTransactionToRedeemDelegations({
+        transaction: TRANSACTION_META_MOCK,
+        messenger: messengerMock,
+        delegationSignature: precomputedSig,
+        skipAuthorization: true,
+      });
+
+      expect(signDelegationMock).not.toHaveBeenCalled();
     });
   });
 });

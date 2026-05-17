@@ -42,6 +42,22 @@ export type SignMessenger = Messenger<
   never
 >;
 
+export type ConvertTransactionToRedeemDelegationsRequest = {
+  transaction: TransactionMeta;
+  messenger: SignMessenger;
+  caveats?: Caveat[];
+  additionalExecutions?: ExecutionStruct[];
+  delegatee?: Hex;
+  delegationSignature?: Hex;
+  skipAuthorization?: boolean;
+};
+
+export type ConvertTransactionToRedeemDelegationsResult = {
+  authorizationList?: AuthorizationList;
+  data: Hex;
+  to: Hex;
+};
+
 export interface DelegationTransaction {
   authorizationList?: AuthorizationList;
   data: Hex;
@@ -55,17 +71,13 @@ interface FlattenedRedemption {
   calldatas: Hex[];
 }
 
-export async function getDelegationTransaction<
-  MessengerType extends SignMessenger,
->(
-  messenger: MessengerType,
-  transaction: TransactionMeta,
-): Promise<DelegationTransaction> {
+export async function convertTransactionToRedeemDelegations(
+  request: ConvertTransactionToRedeemDelegationsRequest,
+): Promise<ConvertTransactionToRedeemDelegationsResult> {
+  const { transaction, messenger } = request;
   const { chainId } = transaction;
   const delegationEnvironment = getDeleGatorEnvironment(parseInt(chainId, 16));
-
-  const delegationManagerAddress =
-    delegationEnvironment.DelegationManager as Hex;
+  const delegationManagerAddress = delegationEnvironment.DelegationManager as Hex;
 
   const { regularTransactions, flattened } = partitionNestedTransactions(
     transaction.nestedTransactions ?? [],
@@ -79,23 +91,32 @@ export async function getDelegationTransaction<
     });
   }
 
-  // Outer delegation authorises only the non-redeem slots; flattened slots carry their own permission contexts.
   const outerTransaction: TransactionMeta = {
     ...transaction,
     nestedTransactions: regularTransactions,
   };
 
-  const outerDelegations = regularTransactions.length
-    ? await buildDelegation(delegationEnvironment, outerTransaction, messenger)
+  const additionalExecutions = request.additionalExecutions ?? [];
+  const defaultExecutions = buildDefaultExecutions(outerTransaction);
+  const allExecutions: ExecutionStruct[] = [...defaultExecutions, ...additionalExecutions];
+
+  const hasOuterSlots = allExecutions.length > 0;
+
+  const outerDelegations = hasOuterSlots
+    ? await signAndWrapDelegation({
+        transaction: outerTransaction,
+        caveats: request.caveats ?? buildDefaultCaveats(delegationEnvironment, allExecutions),
+        messenger,
+        delegatee: request.delegatee,
+        delegationSignature: request.delegationSignature,
+      })
     : [];
 
-  const outerExecutions = regularTransactions.length
-    ? buildExecutions(outerTransaction)
+  const outerModes: ExecutionMode[] = hasOuterSlots
+    ? [allExecutions.length > 1 ? BATCH_DEFAULT_MODE : SINGLE_DEFAULT_MODE]
     : [];
 
-  const outerModes: ExecutionMode[] = regularTransactions.length
-    ? [regularTransactions.length > 1 ? BATCH_DEFAULT_MODE : SINGLE_DEFAULT_MODE]
-    : [];
+  const outerExecutions: ExecutionStruct[][] = hasOuterSlots ? [allExecutions] : [];
 
   log('Built delegations', {
     delegations: outerDelegations,
@@ -103,7 +124,7 @@ export async function getDelegationTransaction<
     executions: outerExecutions,
   });
 
-  const transactionData = encodeRedeemDelegations({
+  const data = encodeRedeemDelegations({
     delegations: outerDelegations,
     modes: outerModes,
     executions: outerExecutions,
@@ -112,29 +133,34 @@ export async function getDelegationTransaction<
     extraCalldatas: flattened.calldatas,
   });
 
-  const authorizationList = await buildAuthorizationList(
-    transaction,
-    messenger,
-  );
+  const authorizationList = request.skipAuthorization
+    ? undefined
+    : await buildAuthorizationList(transaction, messenger);
 
   return {
     authorizationList,
-    data: transactionData,
+    data,
     to: delegationManagerAddress,
+  };
+}
+
+export async function getDelegationTransaction<
+  MessengerType extends SignMessenger,
+>(
+  messenger: MessengerType,
+  transaction: TransactionMeta,
+): Promise<DelegationTransaction> {
+  const { authorizationList, data, to } =
+    await convertTransactionToRedeemDelegations({ transaction, messenger });
+
+  return {
+    authorizationList,
+    data,
+    to,
     value: '0x0',
   };
 }
 
-/**
- * Splits the nested transactions into transactions that the outer delegation
- * must authorise and pre-encoded redeemDelegations slots that can be merged
- * into the outer redeemDelegations call directly. This avoids the cost of
- * wrapping an already-authorised redeemDelegations inside another delegation.
- *
- * @param nestedTransactions - The transaction's nestedTransactions array.
- * @param delegationManagerAddress - The DelegationManager address for the
- * current chain. Used to identify nested redeemDelegations calls.
- */
 function partitionNestedTransactions(
   nestedTransactions: NestedTransactionMetadata[],
   delegationManagerAddress: Hex,
@@ -165,11 +191,6 @@ function partitionNestedTransactions(
   return { regularTransactions, flattened };
 }
 
-/**
- * Returns the decoded (contexts, modes, calldatas) tuple if the nested
- * transaction is a redeemDelegations call to the DelegationManager on the
- * current chain. Returns undefined otherwise.
- */
 function decodeRedeemDelegationsCall(
   tx: NestedTransactionMetadata,
   delegationManagerAddress: Hex,
@@ -210,16 +231,42 @@ function decodeRedeemDelegationsCall(
   }
 }
 
-function toHexBytes(value: Uint8Array | string): Hex {
-  if (typeof value === 'string') {
-    return add0x(value) as Hex;
-  }
-  return bytesToHex(value);
+async function signAndWrapDelegation({
+  transaction,
+  caveats,
+  messenger,
+  delegatee,
+  delegationSignature,
+}: {
+  transaction: TransactionMeta;
+  caveats: Caveat[];
+  messenger: SignMessenger;
+  delegatee?: Hex;
+  delegationSignature?: Hex;
+}): Promise<Delegation[][]> {
+  const unsignedDelegation = buildUnsignedDelegation(
+    transaction,
+    caveats,
+    delegatee,
+  );
+
+  log('Signing delegation', unsignedDelegation);
+
+  const signature =
+    delegationSignature ??
+    ((await messenger.call('DelegationController:signDelegation', {
+      chainId: transaction.chainId,
+      delegation: unsignedDelegation,
+    })) as Hex);
+
+  log('Delegation signature', signature);
+
+  return [[{ ...unsignedDelegation, signature }]];
 }
 
-async function buildAuthorizationList<MessengerType extends SignMessenger>(
+async function buildAuthorizationList(
   transactionMeta: TransactionMeta,
-  messenger: MessengerType,
+  messenger: SignMessenger,
 ): Promise<AuthorizationList | undefined> {
   const { TransactionController } = Engine.context;
   const { chainId, networkClientId, txParams } = transactionMeta;
@@ -302,66 +349,56 @@ async function buildAuthorizationList<MessengerType extends SignMessenger>(
   ];
 }
 
-async function buildDelegation<MessengerType extends SignMessenger>(
-  delegationEnvironment: DeleGatorEnvironment,
+function buildDefaultExecutions(
   transactionMeta: TransactionMeta,
-  messenger: MessengerType,
-): Promise<Delegation[][]> {
-  const unsignedDelegation = buildUnsignedDelegation(
-    delegationEnvironment,
-    transactionMeta,
-  );
-
-  log('Signing delegation');
-
-  const delegationSignature = (await messenger.call(
-    'DelegationController:signDelegation',
-    {
-      chainId: transactionMeta.chainId,
-      delegation: unsignedDelegation,
-    },
-  )) as Hex;
-
-  log('Delegation signature', delegationSignature);
-
-  const delegations: Delegation[][] = [
-    [
-      {
-        ...unsignedDelegation,
-
-        signature: delegationSignature,
-      },
-    ],
-  ];
-
-  return delegations;
-}
-
-function buildExecutions(
-  transactionMeta: TransactionMeta,
-): ExecutionStruct[][] {
+): ExecutionStruct[] {
   const { nestedTransactions } = transactionMeta;
 
-  return [
-    (nestedTransactions ?? []).map((tx) => ({
-      target: tx.to as Hex,
-      value: BigInt(tx.value ?? '0x0'),
-      callData: tx.data as Hex,
-    })),
-  ];
+  return (nestedTransactions ?? []).map((tx) => ({
+    target: tx.to as Hex,
+    value: BigInt(tx.value ?? '0x0'),
+    callData: normalizeCallData(tx.data),
+  }));
+}
+
+function buildDefaultCaveats(
+  environment: DeleGatorEnvironment,
+  executions: ExecutionStruct[],
+): Caveat[] {
+  const caveatBuilder = createCaveatBuilder(environment);
+
+  if (executions.length > 1) {
+    const executionParams = executions.map((ex) => ({
+      to: ex.target as string,
+      value: toHex(ex.value),
+      data: ex.callData as string | undefined,
+    }));
+    caveatBuilder.addCaveat(exactExecutionBatch, executionParams);
+  } else {
+    const ex = executions[0];
+    caveatBuilder.addCaveat(
+      exactExecution,
+      ex.target as string,
+      toHex(ex.value),
+      ex.callData as string | undefined,
+    );
+  }
+
+  caveatBuilder.addCaveat(limitedCalls, 1);
+
+  return caveatBuilder.build();
 }
 
 function buildUnsignedDelegation(
-  environment: DeleGatorEnvironment,
   transactionMeta: TransactionMeta,
+  caveats: Caveat[],
+  delegatee?: Hex,
 ): UnsignedDelegation {
-  const caveats = buildCaveats(environment, transactionMeta);
-
   log('Caveats', caveats);
 
   const delegation = createDelegation({
     from: transactionMeta.txParams.from as Hex,
-    to: ANY_BENEFICIARY,
+    to: delegatee ?? ANY_BENEFICIARY,
     caveats,
   });
 
@@ -370,31 +407,30 @@ function buildUnsignedDelegation(
   return delegation;
 }
 
-function buildCaveats(
-  environment: DeleGatorEnvironment,
-  transaction: TransactionMeta,
-): Caveat[] {
-  const caveatBuilder = createCaveatBuilder(environment);
-  const { nestedTransactions } = transaction;
-
-  const executions = (transaction.nestedTransactions ?? []).map((tx) => ({
-    to: tx.to as string,
-    value: tx.value ?? '0x0',
-    data: tx.data as string | undefined,
-  }));
-
-  if ((nestedTransactions ?? []).length > 1) {
-    caveatBuilder.addCaveat(exactExecutionBatch, executions);
-  } else {
-    caveatBuilder.addCaveat(
-      exactExecution,
-      executions[0].to,
-      executions[0].value,
-      executions[0].data,
-    );
+export function normalizeCallData(data: unknown): Hex {
+  if (typeof data !== 'string' || data.length === 0) {
+    return '0x';
   }
 
-  caveatBuilder.addCaveat(limitedCalls, 1);
+  const hasHexPrefix = data.slice(0, 2).toLowerCase() === '0x';
+  const lower = data.toLowerCase();
+  const prefixed = hasHexPrefix ? `0x${lower.slice(2)}` : `0x${lower}`;
+  const hexBody = prefixed.slice(2);
 
-  return caveatBuilder.build();
+  if (hexBody.length === 0) {
+    return '0x';
+  }
+
+  if (hexBody.length % 2 !== 0) {
+    return normalizeCallData(`0x0${hexBody}`);
+  }
+
+  return prefixed as Hex;
+}
+
+function toHexBytes(value: Uint8Array | string): Hex {
+  if (typeof value === 'string') {
+    return add0x(value) as Hex;
+  }
+  return bytesToHex(value);
 }
