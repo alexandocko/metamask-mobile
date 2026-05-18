@@ -28,10 +28,7 @@ export const bridgeStatusControllerInit: MessengerClientInitFunction<
       clientId: BridgeClientId.MOBILE,
       fetchFn: handleFetch,
       addTransactionBatchFn: (request) =>
-        transactionController.addTransactionBatch({
-          ...request,
-          isInternal: true,
-        }),
+        transactionController.addTransactionBatch(request),
       traceFn: trace as TraceCallback,
       config: {
         customBridgeApiBaseUrl: BRIDGE_API_BASE_URL,
