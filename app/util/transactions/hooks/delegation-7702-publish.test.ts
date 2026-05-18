@@ -20,6 +20,11 @@ import {
   TransactionControllerUpdateTransactionAction,
 } from '@metamask/transaction-controller';
 import { getDeleGatorEnvironment } from '../../../core/Delegation';
+import {
+  encodePermissionContexts,
+  encodeRedeemDelegations,
+} from '../../../core/Delegation/delegation';
+import { encodeExecutionCalldatas } from '../../../core/Delegation/execution';
 import { TransactionControllerInitMessenger } from '../../../core/Engine/messengers/transaction-controller-messenger';
 import {
   RelayStatus,
@@ -33,8 +38,13 @@ import { Hex } from '@metamask/utils';
 jest.mock('../transaction-relay');
 jest.mock('../../../core/Delegation/delegation', () => ({
   ...jest.requireActual('../../../core/Delegation/delegation'),
-  encodeRedeemDelegations: jest.fn(() => '0xdeadbeef'),
-  signDelegation: jest.fn(async () => '0xsignature'),
+  encodeRedeemDelegations: jest.fn(),
+  encodePermissionContexts: jest.fn(),
+  signDelegation: jest.fn(),
+}));
+jest.mock('../../../core/Delegation/execution', () => ({
+  ...jest.requireActual('../../../core/Delegation/execution'),
+  encodeExecutionCalldatas: jest.fn(),
 }));
 
 const SIGNED_TX_MOCK = '0x1234';
@@ -117,6 +127,10 @@ describe('Delegation 7702 Publish Hook', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+
+    jest.mocked(encodeRedeemDelegations).mockReturnValue('0xdeadbeef' as Hex);
+    jest.mocked(encodePermissionContexts).mockReturnValue([]);
+    jest.mocked(encodeExecutionCalldatas).mockReturnValue([]);
 
     const rootMessenger = getRootMessenger();
 

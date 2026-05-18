@@ -5,7 +5,7 @@ import {
   TransactionPayControllerMessenger,
 } from '@metamask/transaction-pay-controller';
 import { TransactionPayControllerInitMessenger } from '../../messengers/transaction-pay-controller-messenger';
-import { getDelegationTransaction } from '../../../../util/transactions/delegation';
+import { convertTransactionToRedeemDelegations } from '../../../../util/transactions/delegation';
 
 export const TransactionPayControllerInit: MessengerClientInitFunction<
   TransactionPayController,
@@ -16,8 +16,14 @@ export const TransactionPayControllerInit: MessengerClientInitFunction<
 
   try {
     const transactionPayController = new TransactionPayController({
-      getDelegationTransaction: ({ transaction }) =>
-        getDelegationTransaction(initMessenger, transaction),
+      getDelegationTransaction: async ({ transaction }) => {
+        const { authorizationList, data, to } =
+          await convertTransactionToRedeemDelegations({
+            transaction,
+            messenger: initMessenger,
+          });
+        return { authorizationList, data, to, value: '0x0' };
+      },
       messenger: controllerMessenger,
       state: persistedState.TransactionPayController,
     });

@@ -261,37 +261,33 @@ export const encodeDisableDelegation = ({
   return concat([encodedSignature, encodedData]);
 };
 
+/**
+ * Encodes the calldata for a redeemDelegations(delegations,modes,executions) call.
+ *
+ * @param params
+ * @param params.delegations - The delegations to redeem.
+ * @param params.modes - The modes to redeem the delegations with.
+ * @param params.executions - The executions to redeem the delegations with.
+ * @returns The encoded calldata.
+ */
 export const encodeRedeemDelegations = ({
   delegations,
   modes,
   executions,
-  extraContexts = [],
-  extraModes = [],
-  extraCalldatas = [],
 }: {
   delegations: Delegation[][];
   modes: ExecutionMode[];
   executions: ExecutionStruct[][];
-  extraContexts?: Hex[];
-  extraModes?: Hex[];
-  extraCalldatas?: Hex[];
 }) => {
   const encodedSignature = toFunctionSelector(
     'redeemDelegations(bytes[],bytes32[],bytes[])',
   );
 
-  const contexts = [...encodePermissionContexts(delegations), ...extraContexts];
-  const calldatas = [
-    ...(executions.length > 0 ? encodeExecutionCalldatas(executions) : []),
-    ...extraCalldatas,
-  ];
-  const allModes = [...modes, ...extraModes];
+  const contexts = encodePermissionContexts(delegations);
+  const calldatas = encodeExecutionCalldatas(executions);
 
   const encodedData = toHex(
-    encode(
-      ['bytes[]', 'bytes32[]', 'bytes[]'],
-      [contexts, allModes, calldatas],
-    ),
+    encode(['bytes[]', 'bytes32[]', 'bytes[]'], [contexts, modes, calldatas]),
   );
 
   return concat([encodedSignature, encodedData]);

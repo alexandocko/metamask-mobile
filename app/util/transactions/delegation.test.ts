@@ -1,4 +1,4 @@
-import { decode } from '@metamask/abi-utils';
+import { decode, encode } from '@metamask/abi-utils';
 import {
   IsAtomicBatchSupportedRequest,
   TransactionController,
@@ -7,7 +7,6 @@ import {
 import {
   SignMessenger,
   convertTransactionToRedeemDelegations,
-  getDelegationTransaction,
 } from './delegation';
 import { MOCK_ANY_NAMESPACE, Messenger } from '@metamask/messenger';
 import { Hex, bytesToHex, remove0x } from '@metamask/utils';
@@ -16,10 +15,12 @@ import {
   SINGLE_DEFAULT_MODE,
   getDeleGatorEnvironment,
 } from '../../core/Delegation';
+import { REDEEM_DELEGATIONS_SELECTOR } from '../../core/Delegation/delegation';
 import {
-  REDEEM_DELEGATIONS_SELECTOR,
-  encodeRedeemDelegations,
-} from '../../core/Delegation/delegation';
+  concat,
+  toFunctionSelector,
+  toHex,
+} from '../../core/Delegation/utils';
 
 const mockGetNonceLock = jest.fn();
 
@@ -98,17 +99,16 @@ describe('Transaction Delegation Utils', () => {
     });
   });
 
-  describe('getDelegationTransaction', () => {
-    it('returns delegation data', async () => {
-      const result = await getDelegationTransaction(
-        messengerMock,
-        TRANSACTION_META_MOCK,
-      );
+  describe('convertTransactionToRedeemDelegations', () => {
+    it('returns delegation data with authorization list when not upgraded', async () => {
+      const result = await convertTransactionToRedeemDelegations({
+        transaction: TRANSACTION_META_MOCK,
+        messenger: messengerMock,
+      });
 
       expect(result).toBeDefined();
       expect(result.to).toBeDefined();
       expect(result.data).toBeDefined();
-      expect(result.value).toBe('0x0');
       expect(result.authorizationList).toHaveLength(1);
       expect(result.authorizationList?.[0].address).toBe(
         UPGRADE_CONTRACT_ADDRESS_MOCK,
@@ -125,9 +125,12 @@ describe('Transaction Delegation Utils', () => {
         },
       ]);
 
-      const result = await getDelegationTransaction(messengerMock, {
-        ...TRANSACTION_META_MOCK,
-        delegationAddress: UPGRADE_CONTRACT_ADDRESS_MOCK,
+      const result = await convertTransactionToRedeemDelegations({
+        transaction: {
+          ...TRANSACTION_META_MOCK,
+          delegationAddress: UPGRADE_CONTRACT_ADDRESS_MOCK,
+        } as TransactionMeta,
+        messenger: messengerMock,
       });
 
       expect(result.authorizationList).toBeUndefined();
@@ -143,16 +146,22 @@ describe('Transaction Delegation Utils', () => {
         },
       ]);
 
-      const result = await getDelegationTransaction(messengerMock, {
-        ...TRANSACTION_META_MOCK,
-        delegationAddress: UPGRADE_CONTRACT_ADDRESS_MOCK,
+      const result = await convertTransactionToRedeemDelegations({
+        transaction: {
+          ...TRANSACTION_META_MOCK,
+          delegationAddress: UPGRADE_CONTRACT_ADDRESS_MOCK,
+        } as TransactionMeta,
+        messenger: messengerMock,
       });
 
       expect(result.authorizationList).toHaveLength(1);
     });
 
     it('calls DelegationController to sign delegation', async () => {
-      await getDelegationTransaction(messengerMock, TRANSACTION_META_MOCK);
+      await convertTransactionToRedeemDelegations({
+        transaction: TRANSACTION_META_MOCK,
+        messenger: messengerMock,
+      });
 
       expect(signDelegationMock).toHaveBeenCalledWith({
         chainId: TRANSACTION_META_MOCK.chainId,
@@ -161,7 +170,10 @@ describe('Transaction Delegation Utils', () => {
     });
 
     it('calls KeyringController to sign authorization', async () => {
-      await getDelegationTransaction(messengerMock, TRANSACTION_META_MOCK);
+      await convertTransactionToRedeemDelegations({
+        transaction: TRANSACTION_META_MOCK,
+        messenger: messengerMock,
+      });
 
       expect(sign7702Mock).toHaveBeenCalledWith({
         chainId: 1,
@@ -175,7 +187,10 @@ describe('Transaction Delegation Utils', () => {
       mockIsAtomicBatchSupported.mockResolvedValue([]);
 
       await expect(
-        getDelegationTransaction(messengerMock, TRANSACTION_META_MOCK),
+        convertTransactionToRedeemDelegations({
+          transaction: TRANSACTION_META_MOCK,
+          messenger: messengerMock,
+        }),
       ).rejects.toThrow('Chain does not support EIP-7702');
     });
 
@@ -189,197 +204,11 @@ describe('Transaction Delegation Utils', () => {
       ]);
 
       await expect(
-        getDelegationTransaction(messengerMock, TRANSACTION_META_MOCK),
+        convertTransactionToRedeemDelegations({
+          transaction: TRANSACTION_META_MOCK,
+          messenger: messengerMock,
+        }),
       ).rejects.toThrow('Upgrade contract address not found');
-    });
-
-    describe('nested redeemDelegations flattening', () => {
-      const MAINNET_DELEGATION_MANAGER = getDeleGatorEnvironment(
-        1,
-      ).DelegationManager.toLowerCase() as Hex;
-
-      const INNER_CONTEXT = '0xaabb' as Hex;
-      const INNER_CALLDATA = '0xccdd' as Hex;
-
-      const buildInnerRedeemCalldata = (): Hex =>
-        encodeRedeemDelegations({
-          delegations: [],
-          modes: [],
-          executions: [],
-          extraContexts: [INNER_CONTEXT],
-          extraModes: [SINGLE_DEFAULT_MODE],
-          extraCalldatas: [INNER_CALLDATA],
-        });
-
-      const decodeOuter = (
-        outerData: Hex,
-      ): { contexts: Hex[]; modes: Hex[]; calldatas: Hex[] } => {
-        const payload = `0x${remove0x(outerData).slice(8)}` as Hex;
-        const [contexts, modes, calldatas] = decode(
-          ['bytes[]', 'bytes32[]', 'bytes[]'],
-          payload,
-        ) as [Uint8Array[], Uint8Array[], Uint8Array[]];
-        return {
-          contexts: contexts.map(bytesToHex),
-          modes: modes.map(bytesToHex),
-          calldatas: calldatas.map(bytesToHex),
-        };
-      };
-
-      it('flattens an inner redeemDelegations into additional outer slots', async () => {
-        const innerRedeem = buildInnerRedeemCalldata();
-        const regularTx = {
-          data: '0xdeadbeef' as Hex,
-          to: '0x1111111111111111111111111111111111111111' as Hex,
-        };
-
-        const result = await getDelegationTransaction(messengerMock, {
-          ...TRANSACTION_META_MOCK,
-          nestedTransactions: [
-            {
-              data: innerRedeem,
-              to: MAINNET_DELEGATION_MANAGER,
-            },
-            regularTx,
-          ],
-        } as TransactionMeta);
-
-        const outer = decodeOuter(result.data);
-
-        expect(outer.contexts).toHaveLength(2);
-        expect(outer.modes).toHaveLength(2);
-        expect(outer.calldatas).toHaveLength(2);
-        expect(outer.contexts[1]).toBe(INNER_CONTEXT);
-        expect(outer.modes[1]).toBe(SINGLE_DEFAULT_MODE);
-        expect(outer.calldatas[1]).toBe(INNER_CALLDATA);
-      });
-
-      it('signs the outer delegation only over the non-redeem nested transactions', async () => {
-        const innerRedeem = buildInnerRedeemCalldata();
-        const regularTx = {
-          data: '0xdeadbeef' as Hex,
-          to: '0x1111111111111111111111111111111111111111' as Hex,
-        };
-
-        await getDelegationTransaction(messengerMock, {
-          ...TRANSACTION_META_MOCK,
-          nestedTransactions: [
-            { data: innerRedeem, to: MAINNET_DELEGATION_MANAGER },
-            regularTx,
-          ],
-        } as TransactionMeta);
-
-        expect(signDelegationMock).toHaveBeenCalledTimes(1);
-        const [signCall] = signDelegationMock.mock.calls;
-        const signedDelegation = signCall[0].delegation;
-        expect(signedDelegation.caveats).toHaveLength(2);
-      });
-
-      it('uses SINGLE mode when only one regular nested transaction remains after flattening', async () => {
-        const innerRedeem = buildInnerRedeemCalldata();
-        const regularTx = {
-          data: '0xdeadbeef' as Hex,
-          to: '0x1111111111111111111111111111111111111111' as Hex,
-        };
-
-        const result = await getDelegationTransaction(messengerMock, {
-          ...TRANSACTION_META_MOCK,
-          nestedTransactions: [
-            { data: innerRedeem, to: MAINNET_DELEGATION_MANAGER },
-            regularTx,
-          ],
-        } as TransactionMeta);
-
-        const outer = decodeOuter(result.data);
-        expect(outer.modes[0]).toBe(SINGLE_DEFAULT_MODE);
-      });
-
-      it('does not flatten nested redeemDelegations when target is not the DelegationManager', async () => {
-        const innerRedeem = buildInnerRedeemCalldata();
-        const result = await getDelegationTransaction(messengerMock, {
-          ...TRANSACTION_META_MOCK,
-          nestedTransactions: [
-            {
-              data: innerRedeem,
-              to: '0x2222222222222222222222222222222222222222' as Hex,
-            },
-          ],
-        } as TransactionMeta);
-
-        const outer = decodeOuter(result.data);
-        expect(outer.contexts).toHaveLength(1);
-        expect(signDelegationMock).toHaveBeenCalledTimes(1);
-      });
-
-      it('does not flatten when nested tx data does not start with the redeemDelegations selector', async () => {
-        const result = await getDelegationTransaction(messengerMock, {
-          ...TRANSACTION_META_MOCK,
-          nestedTransactions: [
-            {
-              data: '0xdeadbeef' as Hex,
-              to: MAINNET_DELEGATION_MANAGER,
-            },
-          ],
-        } as TransactionMeta);
-
-        const outer = decodeOuter(result.data);
-        expect(outer.contexts).toHaveLength(1);
-      });
-
-      it('passes through inner contexts unchanged when only inner redeemDelegations are present', async () => {
-        const innerRedeem = buildInnerRedeemCalldata();
-        const result = await getDelegationTransaction(messengerMock, {
-          ...TRANSACTION_META_MOCK,
-          nestedTransactions: [
-            { data: innerRedeem, to: MAINNET_DELEGATION_MANAGER },
-          ],
-        } as TransactionMeta);
-
-        const outer = decodeOuter(result.data);
-        expect(outer.contexts).toEqual([INNER_CONTEXT]);
-        expect(outer.modes).toEqual([SINGLE_DEFAULT_MODE]);
-        expect(outer.calldatas).toEqual([INNER_CALLDATA]);
-        expect(signDelegationMock).not.toHaveBeenCalled();
-      });
-
-      it('selects the correct selector for a redeemDelegations nested tx', () => {
-        expect(REDEEM_DELEGATIONS_SELECTOR).toBe('0xcef6d209');
-      });
-
-      it('uses BATCH mode when multiple regular nested transactions remain after flattening', async () => {
-        const innerRedeem = buildInnerRedeemCalldata();
-        const result = await getDelegationTransaction(messengerMock, {
-          ...TRANSACTION_META_MOCK,
-          nestedTransactions: [
-            { data: innerRedeem, to: MAINNET_DELEGATION_MANAGER },
-            {
-              data: '0xdeadbeef' as Hex,
-              to: '0x1111111111111111111111111111111111111111' as Hex,
-            },
-            {
-              data: '0xfeedface' as Hex,
-              to: '0x3333333333333333333333333333333333333333' as Hex,
-            },
-          ],
-        } as TransactionMeta);
-
-        const outer = decodeOuter(result.data);
-        expect(outer.modes[0]).toBe(BATCH_DEFAULT_MODE);
-        expect(outer.contexts).toHaveLength(2);
-      });
-    });
-  });
-
-  describe('convertTransactionToRedeemDelegations', () => {
-    it('returns data and delegation manager address', async () => {
-      const result = await convertTransactionToRedeemDelegations({
-        transaction: TRANSACTION_META_MOCK,
-        messenger: messengerMock,
-      });
-
-      expect(result.data).toBeDefined();
-      expect(result.to).toBeDefined();
-      expect(result.authorizationList).toHaveLength(1);
     });
 
     it('skips authorization when skipAuthorization is true', async () => {
@@ -414,7 +243,7 @@ describe('Transaction Delegation Utils', () => {
       });
     });
 
-    it('appends additionalExecutions to the execution batch without changing caveat count', async () => {
+    it('appends additionalExecutions to the execution batch', async () => {
       const extraAddress = '0x1111111111111111111111111111111111111111' as Hex;
       const extra = {
         target: extraAddress,
@@ -445,6 +274,228 @@ describe('Transaction Delegation Utils', () => {
       });
 
       expect(signDelegationMock).not.toHaveBeenCalled();
+    });
+
+    it('falls back to txParams when nestedTransactions is empty', async () => {
+      const txTo = '0x4444444444444444444444444444444444444444' as Hex;
+      const txData = '0xfeedface' as Hex;
+
+      await convertTransactionToRedeemDelegations({
+        transaction: {
+          ...TRANSACTION_META_MOCK,
+          nestedTransactions: undefined,
+          txParams: {
+            ...TRANSACTION_META_MOCK.txParams,
+            to: txTo,
+            value: '0x0' as Hex,
+            data: txData,
+          },
+        } as TransactionMeta,
+        messenger: messengerMock,
+        skipAuthorization: true,
+      });
+
+      expect(signDelegationMock).toHaveBeenCalledTimes(1);
+    });
+
+    describe('nested redeemDelegations flattening', () => {
+      const MAINNET_DELEGATION_MANAGER = getDeleGatorEnvironment(
+        1,
+      ).DelegationManager.toLowerCase() as Hex;
+
+      const INNER_CONTEXT = '0xaabb' as Hex;
+      const INNER_CALLDATA = '0xccdd' as Hex;
+
+      const buildInnerRedeemCalldata = (): Hex => {
+        const selector = toFunctionSelector(
+          'redeemDelegations(bytes[],bytes32[],bytes[])',
+        );
+        const payload = toHex(
+          encode(
+            ['bytes[]', 'bytes32[]', 'bytes[]'],
+            [[INNER_CONTEXT], [SINGLE_DEFAULT_MODE], [INNER_CALLDATA]],
+          ),
+        );
+        return concat([selector, payload]);
+      };
+
+      const decodeOuter = (
+        outerData: Hex,
+      ): { contexts: Hex[]; modes: Hex[]; calldatas: Hex[] } => {
+        const payload = `0x${remove0x(outerData).slice(8)}` as Hex;
+        const [contexts, modes, calldatas] = decode(
+          ['bytes[]', 'bytes32[]', 'bytes[]'],
+          payload,
+        ) as [Uint8Array[], Uint8Array[], Uint8Array[]];
+        return {
+          contexts: contexts.map(bytesToHex),
+          modes: modes.map(bytesToHex),
+          calldatas: calldatas.map(bytesToHex),
+        };
+      };
+
+      it('flattens an inner redeemDelegations into additional outer slots', async () => {
+        const innerRedeem = buildInnerRedeemCalldata();
+        const regularTx = {
+          data: '0xdeadbeef' as Hex,
+          to: '0x1111111111111111111111111111111111111111' as Hex,
+        };
+
+        const result = await convertTransactionToRedeemDelegations({
+          transaction: {
+            ...TRANSACTION_META_MOCK,
+            nestedTransactions: [
+              {
+                data: innerRedeem,
+                to: MAINNET_DELEGATION_MANAGER,
+              },
+              regularTx,
+            ],
+          } as TransactionMeta,
+          messenger: messengerMock,
+        });
+
+        const outer = decodeOuter(result.data);
+
+        expect(outer.contexts).toHaveLength(2);
+        expect(outer.modes).toHaveLength(2);
+        expect(outer.calldatas).toHaveLength(2);
+        expect(outer.contexts[1]).toBe(INNER_CONTEXT);
+        expect(outer.modes[1]).toBe(SINGLE_DEFAULT_MODE);
+        expect(outer.calldatas[1]).toBe(INNER_CALLDATA);
+      });
+
+      it('signs the outer delegation only over the non-redeem nested transactions', async () => {
+        const innerRedeem = buildInnerRedeemCalldata();
+        const regularTx = {
+          data: '0xdeadbeef' as Hex,
+          to: '0x1111111111111111111111111111111111111111' as Hex,
+        };
+
+        await convertTransactionToRedeemDelegations({
+          transaction: {
+            ...TRANSACTION_META_MOCK,
+            nestedTransactions: [
+              { data: innerRedeem, to: MAINNET_DELEGATION_MANAGER },
+              regularTx,
+            ],
+          } as TransactionMeta,
+          messenger: messengerMock,
+        });
+
+        expect(signDelegationMock).toHaveBeenCalledTimes(1);
+        const [signCall] = signDelegationMock.mock.calls;
+        const signedDelegation = signCall[0].delegation;
+        expect(signedDelegation.caveats).toHaveLength(2);
+      });
+
+      it('uses SINGLE mode when only one regular nested transaction remains after flattening', async () => {
+        const innerRedeem = buildInnerRedeemCalldata();
+        const regularTx = {
+          data: '0xdeadbeef' as Hex,
+          to: '0x1111111111111111111111111111111111111111' as Hex,
+        };
+
+        const result = await convertTransactionToRedeemDelegations({
+          transaction: {
+            ...TRANSACTION_META_MOCK,
+            nestedTransactions: [
+              { data: innerRedeem, to: MAINNET_DELEGATION_MANAGER },
+              regularTx,
+            ],
+          } as TransactionMeta,
+          messenger: messengerMock,
+        });
+
+        const outer = decodeOuter(result.data);
+        expect(outer.modes[0]).toBe(SINGLE_DEFAULT_MODE);
+      });
+
+      it('does not flatten nested redeemDelegations when target is not the DelegationManager', async () => {
+        const innerRedeem = buildInnerRedeemCalldata();
+        const result = await convertTransactionToRedeemDelegations({
+          transaction: {
+            ...TRANSACTION_META_MOCK,
+            nestedTransactions: [
+              {
+                data: innerRedeem,
+                to: '0x2222222222222222222222222222222222222222' as Hex,
+              },
+            ],
+          } as TransactionMeta,
+          messenger: messengerMock,
+        });
+
+        const outer = decodeOuter(result.data);
+        expect(outer.contexts).toHaveLength(1);
+        expect(signDelegationMock).toHaveBeenCalledTimes(1);
+      });
+
+      it('does not flatten when nested tx data does not start with the redeemDelegations selector', async () => {
+        const result = await convertTransactionToRedeemDelegations({
+          transaction: {
+            ...TRANSACTION_META_MOCK,
+            nestedTransactions: [
+              {
+                data: '0xdeadbeef' as Hex,
+                to: MAINNET_DELEGATION_MANAGER,
+              },
+            ],
+          } as TransactionMeta,
+          messenger: messengerMock,
+        });
+
+        const outer = decodeOuter(result.data);
+        expect(outer.contexts).toHaveLength(1);
+      });
+
+      it('passes through inner contexts unchanged when only inner redeemDelegations are present', async () => {
+        const innerRedeem = buildInnerRedeemCalldata();
+        const result = await convertTransactionToRedeemDelegations({
+          transaction: {
+            ...TRANSACTION_META_MOCK,
+            nestedTransactions: [
+              { data: innerRedeem, to: MAINNET_DELEGATION_MANAGER },
+            ],
+          } as TransactionMeta,
+          messenger: messengerMock,
+        });
+
+        const outer = decodeOuter(result.data);
+        expect(outer.contexts).toEqual([INNER_CONTEXT]);
+        expect(outer.modes).toEqual([SINGLE_DEFAULT_MODE]);
+        expect(outer.calldatas).toEqual([INNER_CALLDATA]);
+        expect(signDelegationMock).not.toHaveBeenCalled();
+      });
+
+      it('selects the correct selector for a redeemDelegations nested tx', () => {
+        expect(REDEEM_DELEGATIONS_SELECTOR).toBe('0xcef6d209');
+      });
+
+      it('uses BATCH mode when multiple regular nested transactions remain after flattening', async () => {
+        const innerRedeem = buildInnerRedeemCalldata();
+        const result = await convertTransactionToRedeemDelegations({
+          transaction: {
+            ...TRANSACTION_META_MOCK,
+            nestedTransactions: [
+              { data: innerRedeem, to: MAINNET_DELEGATION_MANAGER },
+              {
+                data: '0xdeadbeef' as Hex,
+                to: '0x1111111111111111111111111111111111111111' as Hex,
+              },
+              {
+                data: '0xfeedface' as Hex,
+                to: '0x3333333333333333333333333333333333333333' as Hex,
+              },
+            ],
+          } as TransactionMeta,
+          messenger: messengerMock,
+        });
+
+        const outer = decodeOuter(result.data);
+        expect(outer.modes[0]).toBe(BATCH_DEFAULT_MODE);
+        expect(outer.contexts).toHaveLength(2);
+      });
     });
   });
 });

@@ -162,9 +162,6 @@ export class Delegation7702PublishHook {
       parseInt(effectiveChainId, 16),
     );
 
-    const { to, value, data: txData } = txParams;
-    const normalizedTxData = normalizeCallData(txData);
-
     const caveats = this.#buildCaveats(
       delegationEnvironment,
       transactionMeta,
@@ -172,22 +169,16 @@ export class Delegation7702PublishHook {
       includeTransfer,
     );
 
-    const userExecution: ExecutionStruct = {
-      target: to as Hex,
-      value: BigInt((value as Hex) ?? '0x0'),
-      callData: normalizedTxData,
-    };
-
-    const additionalExecutions: ExecutionStruct[] = includeTransfer && gasFeeToken
-      ? [userExecution, this.#buildTransferExecution(gasFeeToken)]
-      : [userExecution];
+    const additionalExecutions: ExecutionStruct[] =
+      includeTransfer && gasFeeToken
+        ? [this.#buildTransferExecution(gasFeeToken)]
+        : [];
 
     const { data, to: delegationManagerAddress } =
       await convertTransactionToRedeemDelegations({
         transaction: {
           ...transactionMeta,
           chainId: effectiveChainId as Hex,
-          nestedTransactions: [],
         },
         messenger: this.#messenger,
         caveats,
