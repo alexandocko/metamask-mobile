@@ -317,53 +317,8 @@ describe('Transaction Delegation Utils', () => {
         1,
       ).DelegationManager.toLowerCase() as Hex;
 
-      const INNER_DELEGATION = {
-        delegate: '0x2222222222222222222222222222222222222222' as Hex,
-        delegator: '0x3333333333333333333333333333333333333333' as Hex,
-        authority:
-          '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff' as Hex,
-        caveats: [
-          {
-            enforcer: '0x4444444444444444444444444444444444444444' as Hex,
-            terms: '0xabcd' as Hex,
-            args: '0x' as Hex,
-          },
-        ],
-        salt: '0x01' as Hex,
-        signature: '0xdead' as Hex,
-      };
-
-      const INNER_EXECUTION = {
-        target: '0x5555555555555555555555555555555555555555' as Hex,
-        value: 42n,
-        callData: '0xbeef' as Hex,
-      };
-
-      const INNER_CONTEXT = toHex(
-        encode(
-          ['(address,address,bytes32,(address,bytes,bytes)[],uint256,bytes)[]'],
-          [
-            [
-              [
-                INNER_DELEGATION.delegate,
-                INNER_DELEGATION.delegator,
-                INNER_DELEGATION.authority,
-                INNER_DELEGATION.caveats.map((c) => [c.enforcer, c.terms, c.args]),
-                BigInt(INNER_DELEGATION.salt),
-                INNER_DELEGATION.signature,
-              ],
-            ],
-          ],
-        ),
-      );
-
-      const INNER_CALLDATA = toHex(
-        encode(
-          ['address', 'uint256', 'bytes'],
-          [INNER_EXECUTION.target, INNER_EXECUTION.value, INNER_EXECUTION.callData],
-          true,
-        ),
-      );
+      const INNER_CONTEXT = '0xaabb' as Hex;
+      const INNER_CALLDATA = '0xccdd' as Hex;
 
       const buildInnerRedeemCalldata = (): Hex => {
         const selector = toFunctionSelector(
