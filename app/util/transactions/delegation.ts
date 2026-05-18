@@ -1,4 +1,4 @@
-import { decode , encode } from '@metamask/abi-utils';
+import { decode } from '@metamask/abi-utils';
 import {
   AuthorizationList,
   NestedTransactionMetadata,
@@ -7,11 +7,13 @@ import {
 } from '@metamask/transaction-controller';
 import {
   BATCH_DEFAULT_MODE,
+  BATCH_TRY_MODE,
   Caveat,
   DeleGatorEnvironment,
   ExecutionMode,
   ExecutionStruct,
   SINGLE_DEFAULT_MODE,
+  SINGLE_TRY_MODE,
   createCaveatBuilder,
   getDeleGatorEnvironment,
 } from '../../core/Delegation';
@@ -21,20 +23,14 @@ import {
   REDEEM_DELEGATIONS_SELECTOR,
   UnsignedDelegation,
   createDelegation,
-  encodePermissionContexts,
+  encodeRedeemDelegations,
 } from '../../core/Delegation/delegation';
-import { encodeExecutionCalldatas } from '../../core/Delegation/execution';
 import { Hex, add0x, bytesToHex, createProjectLogger, remove0x } from '@metamask/utils';
 import { limitedCalls } from '../../core/Delegation/caveatBuilder/limitedCallsBuilder';
 import { Messenger } from '@metamask/messenger';
 import { DelegationControllerSignDelegationAction } from '@metamask/delegation-controller';
 import { KeyringControllerSignEip7702AuthorizationAction } from '@metamask/keyring-controller';
 import { toHex } from '@metamask/controller-utils';
-import {
-  concat as concatHex,
-  toFunctionSelector,
-  toHex as bytesToHexString,
-} from '../../core/Delegation/utils';
 import Engine from '../../core/Engine';
 import { exactExecutionBatch } from '../../core/Delegation/caveatBuilder/exactExecutionBatchBuilder';
 import { exactExecution } from '../../core/Delegation/caveatBuilder/exactExecutionBuilder';
@@ -68,11 +64,13 @@ export interface ConvertTransactionToRedeemDelegationsResult {
   to: Hex;
 }
 
-interface InnerRedemption {
-  permissionContexts: Hex[];
-  modes: Hex[];
-  calldatas: Hex[];
+interface RedeemDelegationCall {
+  delegations: Delegation[][];
+  modes: ExecutionMode[];
+  executions: ExecutionStruct[][];
 }
+
+const SELECTOR_HEX_CHARS = 8;
 
 export async function convertTransactionToRedeemDelegations(
   request: ConvertTransactionToRedeemDelegationsRequest,
@@ -82,32 +80,53 @@ export async function convertTransactionToRedeemDelegations(
   const delegationEnvironment = getDeleGatorEnvironment(parseInt(chainId, 16));
   const delegationManagerAddress = delegationEnvironment.DelegationManager as Hex;
 
-  const { regularTransactions, inner } = partitionNestedTransactions(
-    transaction.nestedTransactions ?? [],
+  const sourceCalls = extractCalls(transaction);
+
+  const { regular, inner } = partitionCalls(
+    sourceCalls,
     delegationManagerAddress,
   );
 
-  if (inner.permissionContexts.length > 0) {
+  if (inner.length > 0) {
     log('Flattening inner redeemDelegations slots', {
-      innerCount: inner.permissionContexts.length,
-      regularCount: regularTransactions.length,
+      innerCount: inner.length,
+      regularCount: regular.length,
     });
   }
 
-  const hadOriginalNested = Boolean(transaction.nestedTransactions?.length);
-  const allInner =
-    hadOriginalNested && regularTransactions.length === 0;
-
-  const outerTransaction: TransactionMeta = {
-    ...transaction,
-    nestedTransactions: regularTransactions,
-  };
-
-  const defaultExecutions = allInner ? [] : buildDefaultExecutions(outerTransaction);
+  const defaultExecutions: ExecutionStruct[] = regular.map(callToExecution);
   const additionalExecutions = request.additionalExecutions ?? [];
   const allExecutions: ExecutionStruct[] = [...defaultExecutions, ...additionalExecutions];
 
   const hasOuterSlots = allExecutions.length > 0;
+
+  const authorizationList = request.authorization
+    ? await buildAuthorizationList(transaction, messenger, request.authorization)
+    : undefined;
+
+  if (!hasOuterSlots && inner.length === 0) {
+    return {
+      authorizationList,
+      data: '0x' as Hex,
+      to: delegationManagerAddress,
+    };
+  }
+
+  if (!hasOuterSlots && inner.length === 1) {
+    log('Using single inner redeemDelegations call directly');
+    return {
+      authorizationList,
+      data: inner[0],
+      to: delegationManagerAddress,
+    };
+  }
+
+  const innerDecoded = inner.map(decodeRedeemDelegationsPayload);
+
+  const outerTransaction: TransactionMeta = {
+    ...transaction,
+    nestedTransactions: regular.map(callToNestedTransaction),
+  };
 
   const outerDelegations = hasOuterSlots
     ? await signAndWrapDelegation({
@@ -125,31 +144,22 @@ export async function convertTransactionToRedeemDelegations(
       : SINGLE_DEFAULT_MODE
     : undefined;
 
-  const permissionContexts = [
-    ...(hasOuterSlots ? encodePermissionContexts(outerDelegations) : []),
-    ...inner.permissionContexts,
+  const delegations = [
+    ...(hasOuterSlots ? outerDelegations : []),
+    ...innerDecoded.flatMap((d) => d.delegations),
   ];
-  const modes = [...(outerMode ? [outerMode] : []), ...inner.modes];
-  const calldatas = [
-    ...(hasOuterSlots ? encodeExecutionCalldatas([allExecutions]) : []),
-    ...inner.calldatas,
+  const modes = [
+    ...(outerMode ? [outerMode] : []),
+    ...innerDecoded.flatMap((d) => d.modes),
+  ];
+  const executions = [
+    ...(hasOuterSlots ? [allExecutions] : []),
+    ...innerDecoded.flatMap((d) => d.executions),
   ];
 
-  log('Built redeemDelegations call', {
-    permissionContexts,
-    modes,
-    calldatas,
-  });
+  log('Built redeemDelegations call', { delegations, modes, executions });
 
-  const data = encodeRedeemDelegationsCall({
-    permissionContexts,
-    modes,
-    calldatas,
-  });
-
-  const authorizationList = request.authorization
-    ? await buildAuthorizationList(transaction, messenger, request.authorization)
-    : undefined;
+  const data = encodeRedeemDelegations({ delegations, modes, executions });
 
   return {
     authorizationList,
@@ -158,95 +168,165 @@ export async function convertTransactionToRedeemDelegations(
   };
 }
 
-function encodeRedeemDelegationsCall({
-  permissionContexts,
-  modes,
-  calldatas,
-}: {
-  permissionContexts: Hex[];
-  modes: Hex[];
-  calldatas: Hex[];
-}): Hex {
-  const selector = toFunctionSelector(
-    'redeemDelegations(bytes[],bytes32[],bytes[])',
-  );
-  const payload = bytesToHexString(
-    encode(
-      ['bytes[]', 'bytes32[]', 'bytes[]'],
-      [permissionContexts, modes, calldatas],
-    ),
-  );
-  return concatHex([selector, payload]);
+interface Call {
+  to?: Hex;
+  value?: Hex;
+  data?: Hex;
 }
 
-function partitionNestedTransactions(
-  nestedTransactions: NestedTransactionMetadata[],
+function extractCalls(transaction: TransactionMeta): Call[] {
+  const { nestedTransactions, txParams } = transaction;
+
+  if (nestedTransactions?.length && nestedTransactions[0].to) {
+    return nestedTransactions.map((tx) => ({
+      to: tx.to as Hex | undefined,
+      value: tx.value as Hex | undefined,
+      data: tx.data as Hex | undefined,
+    }));
+  }
+
+  if (!txParams.to) {
+    return [];
+  }
+
+  return [
+    {
+      to: txParams.to as Hex,
+      value: (txParams.value as Hex | undefined) ?? '0x0',
+      data: txParams.data as Hex | undefined,
+    },
+  ];
+}
+
+function partitionCalls(
+  calls: Call[],
   delegationManagerAddress: Hex,
-): {
-  regularTransactions: NestedTransactionMetadata[];
-  inner: InnerRedemption;
-} {
-  const regularTransactions: NestedTransactionMetadata[] = [];
-  const inner: InnerRedemption = {
-    permissionContexts: [],
-    modes: [],
-    calldatas: [],
-  };
+): { regular: Call[]; inner: Hex[] } {
+  const regular: Call[] = [];
+  const inner: Hex[] = [];
 
-  for (const tx of nestedTransactions) {
-    const decoded = decodeRedeemDelegationsCall(tx, delegationManagerAddress);
-
-    if (!decoded) {
-      regularTransactions.push(tx);
-      continue;
+  for (const call of calls) {
+    if (isRedeemDelegationsCall(call, delegationManagerAddress)) {
+      inner.push(call.data as Hex);
+    } else {
+      regular.push(call);
     }
-
-    inner.permissionContexts.push(...decoded.permissionContexts);
-    inner.modes.push(...decoded.modes);
-    inner.calldatas.push(...decoded.calldatas);
   }
 
-  return { regularTransactions, inner };
+  return { regular, inner };
 }
 
-function decodeRedeemDelegationsCall(
-  tx: NestedTransactionMetadata,
+function isRedeemDelegationsCall(
+  call: Call,
   delegationManagerAddress: Hex,
-): InnerRedemption | undefined {
-  const { data, to } = tx;
+): boolean {
+  const { data, to } = call;
+  return Boolean(
+    data &&
+      to &&
+      to.toLowerCase() === delegationManagerAddress.toLowerCase() &&
+      data.toLowerCase().startsWith(REDEEM_DELEGATIONS_SELECTOR),
+  );
+}
 
-  if (!data || !to) {
-    return undefined;
+function callToExecution(call: Call): ExecutionStruct {
+  return {
+    target: call.to as Hex,
+    value: BigInt(call.value ?? '0x0'),
+    callData: normalizeCallData(call.data),
+  };
+}
+
+function callToNestedTransaction(call: Call): NestedTransactionMetadata {
+  return {
+    to: call.to,
+    value: call.value,
+    data: call.data,
+  } as NestedTransactionMetadata;
+}
+
+function decodeRedeemDelegationsPayload(callData: Hex): RedeemDelegationCall {
+  const payload = `0x${remove0x(callData).slice(SELECTOR_HEX_CHARS)}` as Hex;
+
+  const [rawContexts, rawModes, rawCalldatas] = decode(
+    ['bytes[]', 'bytes32[]', 'bytes[]'],
+    payload,
+  ) as [Uint8Array[], Uint8Array[], Uint8Array[]];
+
+  const modes = rawModes.map((m) => toHexBytes(m) as ExecutionMode);
+  const delegations = rawContexts.map((ctx) => decodePermissionContext(ctx));
+  const executions = rawCalldatas.map((cd, i) =>
+    decodeExecutionCalldata(cd, modes[i]),
+  );
+
+  return { delegations, modes, executions };
+}
+
+function decodePermissionContext(context: Uint8Array): Delegation[] {
+  const [rawChain] = decode(
+    ['(address,address,bytes32,(address,bytes,bytes)[],uint256,bytes)[]'],
+    context,
+  ) as [
+    [Hex, Hex, Hex, [Hex, Hex, Hex][], bigint, Hex][],
+  ];
+
+  return rawChain.map(
+    ([delegate, delegator, authority, caveats, salt, signature]) => ({
+      delegate,
+      delegator,
+      authority,
+      caveats: caveats.map(([enforcer, terms, args]) => ({
+        enforcer,
+        terms,
+        args,
+      })),
+      salt: toHex(salt) as Hex,
+      signature,
+    }),
+  );
+}
+
+function decodeExecutionCalldata(
+  calldata: Uint8Array,
+  mode: ExecutionMode,
+): ExecutionStruct[] {
+  if (mode === BATCH_DEFAULT_MODE || mode === BATCH_TRY_MODE) {
+    const [items] = decode(['(address,uint256,bytes)[]'], calldata) as [
+      [Hex, bigint, Hex][],
+    ];
+    return items.map(([target, value, callData]) => ({
+      target,
+      value,
+      callData,
+    }));
   }
 
-  if (to.toLowerCase() !== delegationManagerAddress.toLowerCase()) {
-    return undefined;
+  if (mode === SINGLE_DEFAULT_MODE || mode === SINGLE_TRY_MODE) {
+    return [decodePackedSingleExecution(calldata)];
   }
 
-  if (!data.toLowerCase().startsWith(REDEEM_DELEGATIONS_SELECTOR)) {
-    return undefined;
+  throw new Error(`Unsupported execution mode: ${mode}`);
+}
+
+// Inverse of encodeSingleExecution (packed ABI: 20-byte address || 32-byte uint256 || raw callData).
+function decodePackedSingleExecution(calldata: Uint8Array): ExecutionStruct {
+  const ADDRESS_BYTES = 20;
+  const UINT256_BYTES = 32;
+  const HEADER_BYTES = ADDRESS_BYTES + UINT256_BYTES;
+
+  if (calldata.length < HEADER_BYTES) {
+    throw new Error('Invalid packed single execution calldata');
   }
 
-  const SELECTOR_HEX_CHARS = 8;
-  const payload = `0x${remove0x(data).slice(SELECTOR_HEX_CHARS)}` as Hex;
+  const target = bytesToHex(calldata.slice(0, ADDRESS_BYTES)) as Hex;
+  const valueBytes = calldata.slice(ADDRESS_BYTES, HEADER_BYTES);
+  const value = BigInt(bytesToHex(valueBytes));
+  const callData =
+    calldata.length === HEADER_BYTES
+      ? ('0x' as Hex)
+      : (bytesToHex(calldata.slice(HEADER_BYTES)) as Hex);
 
-  try {
-    const [rawContexts, rawModes, rawCalldatas] = decode(
-      ['bytes[]', 'bytes32[]', 'bytes[]'],
-      payload,
-    ) as [Uint8Array[], Uint8Array[], Uint8Array[]];
-
-    return {
-      permissionContexts: rawContexts.map(toHexBytes),
-      modes: rawModes.map(toHexBytes),
-      calldatas: rawCalldatas.map(toHexBytes),
-    };
-  } catch (error) {
-    log('Failed to decode nested redeemDelegations, falling back to nesting', {
-      error,
-    });
-    return undefined;
-  }
+  return { target, value, callData };
 }
 
 async function signAndWrapDelegation({
@@ -386,32 +466,6 @@ async function resolveUpgradeContractAddress(
   }
 
   return chainResult.upgradeContractAddress;
-}
-
-function buildDefaultExecutions(
-  transactionMeta: TransactionMeta,
-): ExecutionStruct[] {
-  const { nestedTransactions, txParams } = transactionMeta;
-
-  if (nestedTransactions?.length && nestedTransactions[0].to) {
-    return nestedTransactions.map((tx) => ({
-      target: tx.to as Hex,
-      value: BigInt(tx.value ?? '0x0'),
-      callData: normalizeCallData(tx.data),
-    }));
-  }
-
-  if (!txParams.to) {
-    return [];
-  }
-
-  return [
-    {
-      target: txParams.to as Hex,
-      value: BigInt((txParams.value as Hex) ?? '0x0'),
-      callData: normalizeCallData(txParams.data),
-    },
-  ];
 }
 
 function buildDefaultCaveats(
