@@ -24,8 +24,8 @@ import { useHomepageTrendingTransactionActiveAbTests } from '../../hooks/useHome
 import { useHomepagePerpsPillsEmptyTransactionActiveAbTests } from '../../hooks/useHomepagePerpsPillsEmptyTransactionActiveAbTests';
 import { mergeActiveAbTestAssignmentLists } from '../../../../../util/analytics/activeABTestAssignments';
 import {
-  HOMEPAGE_PERPS_PILLS_AB_EXPOSED_ADDITIONAL_PROPERTIES,
-  HOMEPAGE_PERPS_PILLS_AB_EXPOSED_ANALYTICS_PROPERTY,
+  HOMEPAGE_PERPS_EMPTY_STATE_AB_SURFACE_ADDITIONAL_PROPERTIES,
+  HOMEPAGE_PERPS_EMPTY_STATE_AB_SURFACE_PROPERTY,
 } from '../../abTestConfig';
 import type { PerpsSectionProps } from './PerpsSectionWithProvider';
 import PillScrollList from '../../../TrendingView/components/PillScrollList';
@@ -120,7 +120,7 @@ const HomepagePerpsMoversSection = forwardRef<
 
     const homeViewedAdditionalProperties =
       analyticsName === HomeSectionNames.PERPS
-        ? HOMEPAGE_PERPS_PILLS_AB_EXPOSED_ADDITIONAL_PROPERTIES
+        ? HOMEPAGE_PERPS_EMPTY_STATE_AB_SURFACE_ADDITIONAL_PROPERTIES
         : undefined;
 
     const { onLayout } = useHomeViewedEvent({
@@ -149,7 +149,7 @@ const HomepagePerpsMoversSection = forwardRef<
           PERPS_EVENT_VALUE.BUTTON_CLICKED.OPEN_POSITION,
         [PERPS_EVENT_PROPERTY.BUTTON_LOCATION]:
           PERPS_EVENT_VALUE.BUTTON_LOCATION.WALLET_HOME,
-        [HOMEPAGE_PERPS_PILLS_AB_EXPOSED_ANALYTICS_PROPERTY]: true,
+        [HOMEPAGE_PERPS_EMPTY_STATE_AB_SURFACE_PROPERTY]: true,
       });
     }, [track]);
 

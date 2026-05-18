@@ -16,7 +16,7 @@ import { useSectionPerformance } from '../../hooks/useSectionPerformance';
 import Routes from '../../../../../constants/navigation/Routes';
 import { selectIsFirstTimePerpsUser } from '../../../../UI/Perps/selectors/perpsController';
 import type { PerpsFeedItem } from '../../../TrendingView/feeds/perps/usePerpsFeed';
-import { HOMEPAGE_PERPS_PILLS_AB_EXPOSED_ANALYTICS_PROPERTY } from '../../abTestConfig';
+import { HOMEPAGE_PERPS_EMPTY_STATE_AB_SURFACE_PROPERTY } from '../../abTestConfig';
 import HomepagePerpsMoversSection from './HomepagePerpsMoversSection';
 
 const mockNavigate = jest.fn();
@@ -251,7 +251,7 @@ describe('HomepagePerpsMoversSection', () => {
           PERPS_EVENT_VALUE.BUTTON_CLICKED.OPEN_POSITION,
         [PERPS_EVENT_PROPERTY.BUTTON_LOCATION]:
           PERPS_EVENT_VALUE.BUTTON_LOCATION.WALLET_HOME,
-        [HOMEPAGE_PERPS_PILLS_AB_EXPOSED_ANALYTICS_PROPERTY]: true,
+        [HOMEPAGE_PERPS_EMPTY_STATE_AB_SURFACE_PROPERTY]: true,
       },
     );
   });
@@ -305,7 +305,7 @@ describe('HomepagePerpsMoversSection', () => {
       expect.objectContaining({
         sectionName: HomeSectionNames.PERPS,
         additionalProperties: {
-          [HOMEPAGE_PERPS_PILLS_AB_EXPOSED_ANALYTICS_PROPERTY]: true,
+          [HOMEPAGE_PERPS_EMPTY_STATE_AB_SURFACE_PROPERTY]: true,
         },
       }),
     );
