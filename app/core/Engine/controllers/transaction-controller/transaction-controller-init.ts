@@ -56,8 +56,7 @@ import { trace } from '../../../../util/trace';
 import { accountSupports7702 } from '../../../../util/transactions/account-supports-7702';
 import { Delegation7702PublishHook } from '../../../../util/transactions/hooks/delegation-7702-publish';
 import { isSendBundleSupported } from '../../../../util/transactions/sentinel-api';
-import { NetworkClientId } from '@metamask/network-controller';
-import { ORIGIN_METAMASK, toHex } from '@metamask/controller-utils';
+import { ORIGIN_METAMASK } from '@metamask/controller-utils';
 import { hasTransactionType } from '../../../../components/Views/confirmations/utils/transaction';
 import { updateConfirmationMetric } from '../../../redux/slices/confirmationMetrics';
 import { store } from '../../../../store';
@@ -198,19 +197,6 @@ export const TransactionControllerInit: MessengerClientInitFunction<
   }
 };
 
-async function getNextNonce(
-  transactionController: TransactionController,
-  address: string,
-  networkClientId: NetworkClientId,
-): Promise<Hex> {
-  const nonceLock = await transactionController.getNonceLock(
-    address,
-    networkClientId,
-  );
-  nonceLock.releaseLock();
-  return toHex(nonceLock.nextNonce);
-}
-
 async function publishHook({
   transactionMeta,
   getState,
@@ -272,8 +258,6 @@ async function publishHook({
         transactionController,
       ),
       messenger: initMessenger,
-      getNextNonce: (address: string, networkClientId: NetworkClientId) =>
-        getNextNonce(transactionController, address, networkClientId),
     }).getHook();
 
     const result = await hook(transactionMeta, signedTransactionInHex);

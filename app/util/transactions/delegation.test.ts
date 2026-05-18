@@ -104,6 +104,7 @@ describe('Transaction Delegation Utils', () => {
       const result = await convertTransactionToRedeemDelegations({
         transaction: TRANSACTION_META_MOCK,
         messenger: messengerMock,
+        authorization: {},
       });
 
       expect(result).toBeDefined();
@@ -131,6 +132,7 @@ describe('Transaction Delegation Utils', () => {
           delegationAddress: UPGRADE_CONTRACT_ADDRESS_MOCK,
         } as TransactionMeta,
         messenger: messengerMock,
+        authorization: {},
       });
 
       expect(result.authorizationList).toBeUndefined();
@@ -152,9 +154,23 @@ describe('Transaction Delegation Utils', () => {
           delegationAddress: UPGRADE_CONTRACT_ADDRESS_MOCK,
         } as TransactionMeta,
         messenger: messengerMock,
+        authorization: {},
       });
 
       expect(result.authorizationList).toHaveLength(1);
+    });
+
+    it('uses provided upgradeContractAddress without querying isAtomicBatchSupported', async () => {
+      const providedAddress = '0xabc' as Hex;
+
+      const result = await convertTransactionToRedeemDelegations({
+        transaction: TRANSACTION_META_MOCK,
+        messenger: messengerMock,
+        authorization: { upgradeContractAddress: providedAddress },
+      });
+
+      expect(result.authorizationList?.[0].address).toBe(providedAddress);
+      expect(mockIsAtomicBatchSupported).not.toHaveBeenCalled();
     });
 
     it('calls DelegationController to sign delegation', async () => {
@@ -173,6 +189,7 @@ describe('Transaction Delegation Utils', () => {
       await convertTransactionToRedeemDelegations({
         transaction: TRANSACTION_META_MOCK,
         messenger: messengerMock,
+        authorization: {},
       });
 
       expect(sign7702Mock).toHaveBeenCalledWith({
@@ -190,6 +207,7 @@ describe('Transaction Delegation Utils', () => {
         convertTransactionToRedeemDelegations({
           transaction: TRANSACTION_META_MOCK,
           messenger: messengerMock,
+          authorization: {},
         }),
       ).rejects.toThrow('Chain does not support EIP-7702');
     });
@@ -207,15 +225,15 @@ describe('Transaction Delegation Utils', () => {
         convertTransactionToRedeemDelegations({
           transaction: TRANSACTION_META_MOCK,
           messenger: messengerMock,
+          authorization: {},
         }),
       ).rejects.toThrow('Upgrade contract address not found');
     });
 
-    it('skips authorization when skipAuthorization is true', async () => {
+    it('does not include authorization list by default', async () => {
       const result = await convertTransactionToRedeemDelegations({
         transaction: TRANSACTION_META_MOCK,
         messenger: messengerMock,
-        skipAuthorization: true,
       });
 
       expect(result.authorizationList).toBeUndefined();
@@ -232,7 +250,6 @@ describe('Transaction Delegation Utils', () => {
         transaction: TRANSACTION_META_MOCK,
         messenger: messengerMock,
         caveats: [customCaveat],
-        skipAuthorization: true,
       });
 
       expect(signDelegationMock).toHaveBeenCalledWith({
@@ -255,7 +272,6 @@ describe('Transaction Delegation Utils', () => {
         transaction: TRANSACTION_META_MOCK,
         messenger: messengerMock,
         additionalExecutions: [extra],
-        skipAuthorization: true,
       });
 
       const [signCall] = signDelegationMock.mock.calls;
@@ -270,7 +286,6 @@ describe('Transaction Delegation Utils', () => {
         transaction: TRANSACTION_META_MOCK,
         messenger: messengerMock,
         delegationSignature: precomputedSig,
-        skipAuthorization: true,
       });
 
       expect(signDelegationMock).not.toHaveBeenCalled();
@@ -292,7 +307,6 @@ describe('Transaction Delegation Utils', () => {
           },
         } as TransactionMeta,
         messenger: messengerMock,
-        skipAuthorization: true,
       });
 
       expect(signDelegationMock).toHaveBeenCalledTimes(1);

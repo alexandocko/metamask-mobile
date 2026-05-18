@@ -48,6 +48,10 @@ export type SignMessenger = Messenger<
   never
 >;
 
+export interface AuthorizationRequest {
+  upgradeContractAddress?: Hex;
+}
+
 export interface ConvertTransactionToRedeemDelegationsRequest {
   transaction: TransactionMeta;
   messenger: SignMessenger;
@@ -55,7 +59,7 @@ export interface ConvertTransactionToRedeemDelegationsRequest {
   additionalExecutions?: ExecutionStruct[];
   delegatee?: Hex;
   delegationSignature?: Hex;
-  skipAuthorization?: boolean;
+  authorization?: AuthorizationRequest;
 }
 
 export interface ConvertTransactionToRedeemDelegationsResult {
@@ -143,9 +147,9 @@ export async function convertTransactionToRedeemDelegations(
     calldatas,
   });
 
-  const authorizationList = request.skipAuthorization
-    ? undefined
-    : await buildAuthorizationList(transaction, messenger);
+  const authorizationList = request.authorization
+    ? await buildAuthorizationList(transaction, messenger, request.authorization)
+    : undefined;
 
   return {
     authorizationList,
@@ -281,45 +285,22 @@ async function signAndWrapDelegation({
 async function buildAuthorizationList(
   transactionMeta: TransactionMeta,
   messenger: SignMessenger,
+  authorization: AuthorizationRequest,
 ): Promise<AuthorizationList | undefined> {
+  const upgradeContractAddress = await resolveUpgradeContractAddress(
+    transactionMeta,
+    authorization,
+  );
+
+  if (!upgradeContractAddress) {
+    return undefined;
+  }
+
   const { TransactionController } = Engine.context;
   const { chainId, networkClientId, txParams } = transactionMeta;
   const { from } = txParams;
 
-  const atomicBatchResult = await TransactionController.isAtomicBatchSupported({
-    address: from as Hex,
-    chainIds: [chainId],
-  });
-
-  const chainResult = atomicBatchResult.find(
-    (r) => r.chainId.toLowerCase() === chainId.toLowerCase(),
-  );
-
-  if (!chainResult) {
-    throw new Error('Chain does not support EIP-7702');
-  }
-
-  const { delegationAddress, isSupported, upgradeContractAddress } =
-    chainResult;
-
-  if (isSupported) {
-    log('Skipping authorization as already upgraded');
-    return undefined;
-  }
-
-  if (!delegationAddress) {
-    log('Upgrading account to EIP-7702', { from, upgradeContractAddress });
-  } else {
-    log('Overwriting authorization as already upgraded', {
-      from,
-      current: delegationAddress,
-      new: upgradeContractAddress,
-    });
-  }
-
-  if (!upgradeContractAddress) {
-    throw new Error('Upgrade contract address not found');
-  }
+  log('Upgrading account to EIP-7702', { from, upgradeContractAddress });
 
   const nonceLock = await TransactionController.getNonceLock(
     from,
@@ -363,6 +344,50 @@ async function buildAuthorizationList(
   ];
 }
 
+async function resolveUpgradeContractAddress(
+  transactionMeta: TransactionMeta,
+  authorization: AuthorizationRequest,
+): Promise<Hex | undefined> {
+  if (authorization.upgradeContractAddress) {
+    return authorization.upgradeContractAddress;
+  }
+
+  const { TransactionController } = Engine.context;
+  const { chainId, txParams } = transactionMeta;
+  const { from } = txParams;
+
+  const atomicBatchResult = await TransactionController.isAtomicBatchSupported({
+    address: from as Hex,
+    chainIds: [chainId],
+  });
+
+  const chainResult = atomicBatchResult.find(
+    (r) => r.chainId.toLowerCase() === chainId.toLowerCase(),
+  );
+
+  if (!chainResult) {
+    throw new Error('Chain does not support EIP-7702');
+  }
+
+  if (chainResult.isSupported) {
+    log('Skipping authorization as already upgraded');
+    return undefined;
+  }
+
+  if (!chainResult.upgradeContractAddress) {
+    throw new Error('Upgrade contract address not found');
+  }
+
+  if (chainResult.delegationAddress) {
+    log('Overwriting existing delegation', {
+      current: chainResult.delegationAddress,
+      new: chainResult.upgradeContractAddress,
+    });
+  }
+
+  return chainResult.upgradeContractAddress;
+}
+
 function buildDefaultExecutions(
   transactionMeta: TransactionMeta,
 ): ExecutionStruct[] {
@@ -374,6 +399,10 @@ function buildDefaultExecutions(
       value: BigInt(tx.value ?? '0x0'),
       callData: normalizeCallData(tx.data),
     }));
+  }
+
+  if (!txParams.to) {
+    return [];
   }
 
   return [
@@ -398,7 +427,7 @@ function buildDefaultCaveats(
       data: ex.callData as string | undefined,
     }));
     caveatBuilder.addCaveat(exactExecutionBatch, executionParams);
-  } else {
+  } else if (executions.length === 1) {
     const ex = executions[0];
     caveatBuilder.addCaveat(
       exactExecution,
