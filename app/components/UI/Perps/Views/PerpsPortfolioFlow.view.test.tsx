@@ -88,8 +88,6 @@ describe('Portfolio & Account Flow', () => {
     await act(async () => {
       cleanup();
     });
-    renderPerpsTabView({ extraRoutes: [{ name: MARKET_LIST_ROUTE }] });
-    cleanup();
     renderPerpsTabView({
       extraRoutes: [{ name: MARKET_LIST_ROUTE, mount: 'perps-root' }],
     });
@@ -125,6 +123,7 @@ describe('Portfolio & Account Flow', () => {
             change24h: '$0',
             change24hPercent: '0%',
             volume: '$1M',
+            openInterest: '$500K',
           },
           {
             symbol: 'BTC',
@@ -134,6 +133,7 @@ describe('Portfolio & Account Flow', () => {
             change24h: '$0',
             change24hPercent: '0%',
             volume: '$1M',
+            openInterest: '$500K',
           },
         ],
       },
@@ -299,11 +299,15 @@ describe('Portfolio & Account Flow', () => {
       ),
     ).toBeOnTheScreen();
     // Trader presses Add Margin and Remove Margin
-    fireEvent.press(screen.getByText(ADD_MARGIN));
+    await act(async () => {
+      fireEvent.press(screen.getByText(ADD_MARGIN));
+    });
     await act(async () => {
       cleanup();
     });
     renderPerpsSelectAdjustMarginActionView();
-    fireEvent.press(await screen.findByText(REDUCE_MARGIN));
+    await act(async () => {
+      fireEvent.press(await screen.findByText(REDUCE_MARGIN));
+    });
   });
 });

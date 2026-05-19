@@ -80,6 +80,7 @@ const initialMarketData: PerpsMarketData[] = [
     change24h: '$0',
     change24hPercent: '0%',
     volume: '$1M',
+    openInterest: '$500K',
   },
 ];
 
@@ -461,6 +462,7 @@ const defaultMarketDetailsMarket = {
   change24h: '+$50.00',
   change24hPercent: '+2.5%',
   volume: '$1.5B',
+  openInterest: '$500M',
   maxLeverage: '50x',
   marketType: 'crypto',
 };
@@ -608,6 +610,7 @@ const defaultOrderBookMarket = {
   change24h: '+$50.00',
   change24hPercent: '+2.5%',
   volume: '$1.5B',
+  openInterest: '$500M',
   maxLeverage: '50x',
   marketType: 'crypto' as const,
 };
