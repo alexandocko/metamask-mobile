@@ -2713,6 +2713,7 @@ describe('PerpsController', () => {
         {
           networkClientId: mockNetworkClientId,
           origin: 'metamask',
+          isInternal: true,
           type: 'perpsDeposit',
           skipInitialGasEstimate: true,
         },
@@ -3104,6 +3105,7 @@ describe('PerpsController', () => {
         {
           networkClientId: mockNetworkClientId,
           origin: 'metamask',
+          isInternal: true,
           type: 'perpsDepositAndOrder',
           skipInitialGasEstimate: true,
         },
