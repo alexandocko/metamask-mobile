@@ -57,7 +57,6 @@ import ConnectionDetails from '../../../components/Views/AccountPermissions/Conn
 import { SRPQuiz } from '../../Views/Quiz';
 import { TurnOffRememberMeModal } from '../../../components/UI/TurnOffRememberMeModal';
 import AssetHideConfirmation from '../../Views/AssetHideConfirmation';
-import AssetOptions from '../../Views/AssetOptions';
 import ImportPrivateKey from '../../Views/ImportPrivateKey';
 import ImportPrivateKeySuccess from '../../Views/ImportPrivateKeySuccess';
 import ConnectQRHardware from '../../Views/ConnectQRHardware';
@@ -588,7 +587,6 @@ const RootModalFlow = (props: RootModalFlowProps) => (
       name={'AssetHideConfirmation'}
       component={AssetHideConfirmation}
     />
-    <Stack.Screen name={'AssetOptions'} component={AssetOptions} />
     <Stack.Screen name={'NftOptions'} component={NftOptions} />
     <Stack.Screen name={Routes.MODAL.UPDATE_NEEDED} component={UpdateNeeded} />
     <Stack.Screen
