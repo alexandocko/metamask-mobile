@@ -383,7 +383,6 @@ describe('Engine', () => {
         cacheTimestamp: 0,
       },
     };
-    const keyringState = null;
     const analyticsId = '24d24a09-b210-4971-9601-4603c60b23c3';
     const enableRpcFailoverSpy = jest.spyOn(
       NetworkController.prototype,
@@ -403,7 +402,7 @@ describe('Engine', () => {
         },
       });
 
-    Engine.init(analyticsId, state, keyringState);
+    Engine.init(analyticsId, state);
 
     // We can't await RemoteFeatureFlagController:stateChange because can't
     // guarantee it hasn't been called already, so this is the next best option
@@ -427,7 +426,6 @@ describe('Engine', () => {
         cacheTimestamp: 0,
       },
     };
-    const keyringState = null;
     const analyticsId = '24d24a09-b210-4971-9601-4603c60b23c3';
     const disableRpcFailoverSpy = jest.spyOn(
       NetworkController.prototype,
@@ -447,7 +445,7 @@ describe('Engine', () => {
         },
       });
 
-    Engine.init(analyticsId, state, keyringState);
+    Engine.init(analyticsId, state);
 
     // We can't await RemoteFeatureFlagController:stateChange because can't
     // guarantee it hasn't been called already, so this is the next best option
@@ -813,17 +811,13 @@ describe('Engine', () => {
       },
     );
 
-    const engine = Engine.init(
-      TEST_ANALYTICS_ID,
-      {
-        ...backgroundState,
-        KeyringController: {
-          ...backgroundState.KeyringController,
-          isUnlocked: true,
-        },
+    const engine = Engine.init(TEST_ANALYTICS_ID, {
+      ...backgroundState,
+      KeyringController: {
+        ...backgroundState.KeyringController,
+        isUnlocked: true,
       },
-      null,
-    );
+    });
 
     const messengerSpy = jest.spyOn(engine.controllerMessenger, 'call');
 
@@ -844,17 +838,13 @@ describe('Engine', () => {
       },
     );
 
-    const engine = Engine.init(
-      TEST_ANALYTICS_ID,
-      {
-        ...backgroundState,
-        KeyringController: {
-          ...backgroundState.KeyringController,
-          isUnlocked: true,
-        },
+    const engine = Engine.init(TEST_ANALYTICS_ID, {
+      ...backgroundState,
+      KeyringController: {
+        ...backgroundState.KeyringController,
+        isUnlocked: true,
       },
-      null,
-    );
+    });
 
     const messengerSpy = jest.spyOn(engine.controllerMessenger, 'call');
 
@@ -894,17 +884,13 @@ describe('Engine', () => {
       },
     );
 
-    const engine = Engine.init(
-      TEST_ANALYTICS_ID,
-      {
-        ...backgroundState,
-        KeyringController: {
-          ...backgroundState.KeyringController,
-          isUnlocked: false,
-        },
+    const engine = Engine.init(TEST_ANALYTICS_ID, {
+      ...backgroundState,
+      KeyringController: {
+        ...backgroundState.KeyringController,
+        isUnlocked: false,
       },
-      null,
-    );
+    });
 
     const messengerSpy = jest.spyOn(engine.controllerMessenger, 'call');
 
