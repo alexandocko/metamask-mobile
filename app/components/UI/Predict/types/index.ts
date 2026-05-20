@@ -42,6 +42,8 @@ export enum PredictMarketStatus {
   RESOLVED = 'resolved',
 }
 
+export const OPEN_PREDICT_OUTCOME_STATUS: PredictOutcome['status'] = 'open';
+
 export enum Recurrence {
   NONE = 'none',
   DAILY = 'daily',
@@ -399,7 +401,7 @@ export interface GetCryptoPriceHistoryParams {
 }
 
 /**
- * A single point from the crypto price history API.
+ * A single point from the crypto price history source.
  */
 export interface CryptoPriceHistoryPoint {
   /** Unix timestamp in seconds */
