@@ -30,6 +30,7 @@ describe('getRampsEnvironment', () => {
   const originalBuildsEnabled =
     process.env.BUILDS_ENABLED_WITH_GH_ACTIONS_TEMPORARY;
   const originalRampsEnvironment = process.env.RAMPS_ENVIRONMENT;
+  const originalUseDevEnvironment = process.env.RAMPS_USE_DEV_ENVIRONMENT;
 
   beforeEach(() => {
     process.env.BUILDS_ENABLED_WITH_GH_ACTIONS_TEMPORARY = 'false';
@@ -48,6 +49,27 @@ describe('getRampsEnvironment', () => {
     } else {
       delete process.env.RAMPS_ENVIRONMENT;
     }
+    if (originalUseDevEnvironment !== undefined) {
+      process.env.RAMPS_USE_DEV_ENVIRONMENT = originalUseDevEnvironment;
+    } else {
+      delete process.env.RAMPS_USE_DEV_ENVIRONMENT;
+    }
+  });
+
+  describe('when RAMPS_USE_DEV_ENVIRONMENT is true', () => {
+    beforeEach(() => {
+      process.env.RAMPS_USE_DEV_ENVIRONMENT = 'true';
+    });
+
+    it('returns Development environment', () => {
+      expect(getRampsEnvironment()).toBe(RampsEnvironment.Development);
+    });
+
+    it('overrides builds.yml environment selection', () => {
+      process.env.BUILDS_ENABLED_WITH_GH_ACTIONS_TEMPORARY = 'true';
+      process.env.RAMPS_ENVIRONMENT = 'production';
+      expect(getRampsEnvironment()).toBe(RampsEnvironment.Development);
+    });
   });
 
   describe('when BUILDS_ENABLED_WITH_GH_ACTIONS_TEMPORARY (builds.yml path)', () => {
@@ -157,6 +179,7 @@ describe('rampsServiceInit', () => {
   const originalBuildsEnabled =
     process.env.BUILDS_ENABLED_WITH_GH_ACTIONS_TEMPORARY;
   const originalRampsEnvironment = process.env.RAMPS_ENVIRONMENT;
+  const originalUseDevEnvironment = process.env.RAMPS_USE_DEV_ENVIRONMENT;
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -182,6 +205,11 @@ describe('rampsServiceInit', () => {
       process.env.RAMPS_ENVIRONMENT = originalRampsEnvironment;
     } else {
       delete process.env.RAMPS_ENVIRONMENT;
+    }
+    if (originalUseDevEnvironment !== undefined) {
+      process.env.RAMPS_USE_DEV_ENVIRONMENT = originalUseDevEnvironment;
+    } else {
+      delete process.env.RAMPS_USE_DEV_ENVIRONMENT;
     }
   });
 
@@ -223,6 +251,17 @@ describe('rampsServiceInit', () => {
   });
 
   describe('environment configuration', () => {
+    it('passes Development environment when RAMPS_USE_DEV_ENVIRONMENT is true', () => {
+      process.env.RAMPS_USE_DEV_ENVIRONMENT = 'true';
+      rampsServiceInit(initRequestMock);
+
+      expect(rampsServiceClassMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          environment: RampsEnvironment.Development,
+        }),
+      );
+    });
+
     it('passes Production environment for production environment', () => {
       process.env.METAMASK_ENVIRONMENT = 'production';
       rampsServiceInit(initRequestMock);

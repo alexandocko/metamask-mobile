@@ -11,6 +11,11 @@ import {
  * Otherwise (legacy .js.env / E2E), uses METAMASK_ENVIRONMENT switch.
  */
 export function getRampsEnvironment(): RampsEnvironment {
+  // Dev-only opt-in toggle to route ramps traffic to the development environment.
+  if (process.env.RAMPS_USE_DEV_ENVIRONMENT === 'true') {
+    return RampsEnvironment.Development;
+  }
+
   if (process.env.BUILDS_ENABLED_WITH_GH_ACTIONS_TEMPORARY === 'true') {
     const rampsEnv = process.env.RAMPS_ENVIRONMENT;
     return rampsEnv === 'production'
