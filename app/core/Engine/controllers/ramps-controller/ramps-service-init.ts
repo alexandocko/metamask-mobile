@@ -5,6 +5,39 @@ import {
   RampsServiceMessenger,
   RampsEnvironment,
 } from '@metamask/ramps-controller';
+import Logger from '../../../../util/Logger';
+
+function extractFetchUrl(input: RequestInfo | URL): string {
+  if (typeof input === 'string') {
+    return input;
+  }
+  if (input instanceof URL) {
+    return input.toString();
+  }
+  return input.url;
+}
+
+function createRampsServiceFetch(environment: RampsEnvironment): typeof fetch {
+  if (!(__DEV__ && environment === RampsEnvironment.Development)) {
+    return fetch;
+  }
+
+  let hasLoggedFirstInitUrl = false;
+
+  return async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = extractFetchUrl(input);
+    if (
+      !hasLoggedFirstInitUrl &&
+      /on-ramp-cache\.(dev-api|uat-api|api)\.cx\.metamask\.io/u.test(url) &&
+      /\/v2\/regions\/[^/]+\/(providers|topTokens|payments)\?/u.test(url)
+    ) {
+      hasLoggedFirstInitUrl = true;
+      Logger.log(`Ramps init API URL: ${url}`);
+    }
+
+    return fetch(input, init);
+  };
+}
 
 /**
  * When BUILDS_ENABLED_WITH_GH_ACTIONS_TEMPORARY (and not E2E), uses RAMPS_ENVIRONMENT (set by builds.yml).
@@ -57,11 +90,12 @@ export const rampsServiceInit: MessengerClientInitFunction<
   RampsService,
   RampsServiceMessenger
 > = ({ controllerMessenger }) => {
+  const environment = getRampsEnvironment();
   const service = new RampsService({
     messenger: controllerMessenger,
-    environment: getRampsEnvironment(),
+    environment,
     context: getRampsContext(),
-    fetch,
+    fetch: createRampsServiceFetch(environment),
   });
 
   return {
