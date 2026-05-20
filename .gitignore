@@ -33,6 +33,13 @@ ios/debug.xcconfig
 ios/release.xcconfig
 .xcode.env.local
 
+# Expo-generated iOS files (not part of the managed native project)
+ios/.gitignore
+ios/metamask/metamask-Bridging-Header.h
+ios/metamask/Supporting/
+ios/metamask/Images.xcassets/AppIcon.appiconset/App-Icon-1024x1024@1x.png
+ios/metamask/Images.xcassets/SplashScreenBackground.colorset/
+
 # android / intellij
 build/
 app/bin

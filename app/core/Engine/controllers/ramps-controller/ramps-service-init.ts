@@ -17,8 +17,26 @@ function extractFetchUrl(input: RequestInfo | URL): string {
   return input.url;
 }
 
-function createRampsServiceFetch(environment: RampsEnvironment): typeof fetch {
-  if (!(__DEV__ && environment === RampsEnvironment.Development)) {
+function getRampsCacheBaseUrl(environment: RampsEnvironment): string {
+  switch (environment) {
+    case RampsEnvironment.Production:
+      return 'https://on-ramp-cache.api.cx.metamask.io';
+    case RampsEnvironment.Development:
+      return 'https://on-ramp-cache.dev-api.cx.metamask.io';
+    case RampsEnvironment.Local:
+      return 'http://localhost';
+    case RampsEnvironment.Staging:
+    default:
+      return 'https://on-ramp-cache.uat-api.cx.metamask.io';
+  }
+}
+
+function logRampsInitUrl(message: string): void {
+  Logger.log(`[RAMPS_INIT] ${message}`);
+}
+
+function createRampsServiceFetch(): typeof fetch {
+  if (!__DEV__) {
     return fetch;
   }
 
@@ -29,10 +47,10 @@ function createRampsServiceFetch(environment: RampsEnvironment): typeof fetch {
     if (
       !hasLoggedFirstInitUrl &&
       /on-ramp-cache\.(dev-api|uat-api|api)\.cx\.metamask\.io/u.test(url) &&
-      /\/v2\/regions\/[^/]+\/(providers|topTokens|payments)\?/u.test(url)
+      /\/v2\/regions\/[^/]+\/(providers|topTokens|payments)(\?|$)/u.test(url)
     ) {
       hasLoggedFirstInitUrl = true;
-      Logger.log(`Ramps init API URL: ${url}`);
+      logRampsInitUrl(`First init API URL: ${url}`);
     }
 
     return fetch(input, init);
@@ -91,11 +109,16 @@ export const rampsServiceInit: MessengerClientInitFunction<
   RampsServiceMessenger
 > = ({ controllerMessenger }) => {
   const environment = getRampsEnvironment();
+  if (__DEV__) {
+    logRampsInitUrl(
+      `Init with RAMPS_USE_DEV_ENVIRONMENT=${process.env.RAMPS_USE_DEV_ENVIRONMENT ?? 'unset'}; resolved environment=${environment}; expected base host=${getRampsCacheBaseUrl(environment)}`,
+    );
+  }
   const service = new RampsService({
     messenger: controllerMessenger,
     environment,
     context: getRampsContext(),
-    fetch: createRampsServiceFetch(environment),
+    fetch: createRampsServiceFetch(),
   });
 
   return {
