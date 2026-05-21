@@ -26,6 +26,7 @@ import { MetaMetricsEvents } from '../../Analytics/MetaMetrics.events';
 import { TransportType } from '../../../components/hooks/useAnalytics/useAnalytics.types';
 import { KeyringTypes } from '@metamask/keyring-controller';
 import { SDK } from '@metamask/profile-sync-controller';
+import { authEnv } from '../../devApiEnv';
 
 /**
  * Fire-and-forget analytics helper. Never throws — a broken analytics
@@ -382,8 +383,12 @@ export class ConnectionRegistry {
       //   wallet_createSession separately after the handshake. There may be
       //   a noticeable delay before the approval appears, so we keep the
       //   loading toast visible and let it autodismiss naturally.
+      // - Agentic CLI QR login owns the next step in-app via OTP/WebView, so
+      //   hide the generic connection toast once its handshake succeeds.
       const isQrFlow = connReq?.sessionRequest.initialMessage === undefined;
-      const shouldHideLoadingToast = didConnectionFail || !isQrFlow;
+      const isAgenticCliFlow = connReq ? this.isAgenticCli(connReq) : false;
+      const shouldHideLoadingToast =
+        didConnectionFail || isAgenticCliFlow || !isQrFlow;
       if (connInfo && shouldHideLoadingToast) {
         this.hostapp.hideConnectionLoading(connInfo);
       }
@@ -579,7 +584,7 @@ export class ConnectionRegistry {
       return dashboardAuthUrl;
     }
 
-    const url = new URL(SDK.getEnvUrls(SDK.Env.DEV).authApiUrl);
+    const url = new URL(SDK.getEnvUrls(authEnv()).authApiUrl);
     url.pathname = CLI_DASHBOARD_TOKEN_PATH;
     return url.toString();
   }

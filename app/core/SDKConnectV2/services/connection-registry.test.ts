@@ -73,11 +73,16 @@ describe('ConnectionRegistry', () => {
   let mockConnectionRequest: ConnectionRequest;
   let mockConnectionInfo: ConnectionInfo;
   let validDeeplink: string;
+  let originalDevApiEnv: string | undefined;
+  let originalFetch: typeof global.fetch;
 
   const RELAY_URL = 'wss://test-relay.example.com';
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    originalDevApiEnv = process.env.MM_DEV_API_ENV;
+    delete process.env.MM_DEV_API_ENV;
+    originalFetch = global.fetch;
 
     mockConnectionRequest = {
       sessionRequest: {
@@ -166,6 +171,15 @@ describe('ConnectionRegistry', () => {
 
     // Wait for initialization to complete
     await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+
+  afterEach(() => {
+    if (originalDevApiEnv === undefined) {
+      delete process.env.MM_DEV_API_ENV;
+    } else {
+      process.env.MM_DEV_API_ENV = originalDevApiEnv;
+    }
+    global.fetch = originalFetch;
   });
 
   describe('isMwpDeeplink', () => {
@@ -526,6 +540,22 @@ describe('ConnectionRegistry', () => {
         Engine.context.AuthenticationController.getBearerToken,
       ).toHaveBeenCalledWith(MOCK_ENTROPY_SOURCE);
       expect(mockConnection.sendAuthToken).toHaveBeenCalledWith('cli-token');
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://authentication.api.cx.metamask.io/api/v2/mm-qr-login/token',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer hydra-token',
+          },
+        }),
+      );
+      expect(mockHostApp.hideConnectionLoading).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: mockConnectionInfo.id,
+          metadata: mockConnectionInfo.metadata,
+          expiresAt: expect.any(Number),
+        }),
+      );
       expect(mockStore.save).not.toHaveBeenCalled();
       expect(mockHostApp.syncConnectionList).not.toHaveBeenCalledWith([
         mockConnection,
@@ -1017,6 +1047,37 @@ describe('ConnectionRegistry', () => {
       expect(mockHostApp.syncConnectionList).toHaveBeenCalledWith([
         mockConnection,
       ]);
+    });
+
+    it('dismisses the loading toast on success for agentic CLI QR flows', async () => {
+      registry = new ConnectionRegistry(
+        RELAY_URL,
+        mockKeyManager,
+        mockHostApp,
+        mockStore,
+      );
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue({ access_token: 'dashboard-token' }),
+      }) as jest.Mock;
+
+      const agenticQrRequest: ConnectionRequest = {
+        ...mockConnectionRequest,
+        connectionType: {
+          name: 'agentic-cli',
+        },
+        sessionRequest: {
+          ...mockConnectionRequest.sessionRequest,
+          initialMessage: undefined,
+        },
+      };
+      const agenticQrDeeplink = buildDeeplink(agenticQrRequest);
+
+      await registry.handleConnectDeeplink(agenticQrDeeplink);
+
+      expect(mockHostApp.showConnectionLoading).toHaveBeenCalledTimes(1);
+      expect(mockHostApp.hideConnectionLoading).toHaveBeenCalledTimes(1);
+      expect(mockHostApp.showCliLinkSuccess).toHaveBeenCalledTimes(1);
     });
 
     it('dismisses the loading toast for QR flows when connect() fails so it does not overlap the error toast', async () => {
