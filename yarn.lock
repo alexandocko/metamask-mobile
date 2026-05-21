@@ -7480,9 +7480,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@metamask-previews/wallet@npm:0.0.0-preview-b6651eda2":
-  version: 0.0.0-preview-b6651eda2
-  resolution: "@metamask-previews/wallet@npm:0.0.0-preview-b6651eda2"
+"@metamask-previews/wallet@npm:0.0.0-preview-d28b57d4b":
+  version: 0.0.0-preview-d28b57d4b
+  resolution: "@metamask-previews/wallet@npm:0.0.0-preview-d28b57d4b"
   dependencies:
     "@metamask/base-controller": "npm:^9.1.0"
     "@metamask/browser-passworder": "npm:^6.0.0"
@@ -7490,7 +7490,7 @@ __metadata:
     "@metamask/messenger": "npm:^1.2.0"
     "@metamask/scure-bip39": "npm:^2.1.1"
     "@metamask/utils": "npm:^11.9.0"
-  checksum: 10/f22f5af91983ef10fafc07d0e19c6736ca35a11166a703d95c06254c36b2d88831b136740ef8c17603b094a3ad1afd6ca89e0c4d85eeb961dd1316d08b1dec01
+  checksum: 10/64b0cb77b8d9d9787322a6f45e4c5c714f6c449690fe180867f34ad79083013a9088d1e772f1cea004da6c0dd3c359438b3ab23bf7eade0986c57fc463caa5f0
   languageName: node
   linkType: hard
 
@@ -35221,7 +35221,7 @@ __metadata:
     "@lavamoat/react-native-lockdown": "npm:^0.0.2"
     "@ledgerhq/hw-app-eth": "npm:^6.42.0"
     "@ledgerhq/react-native-hw-transport-ble": "npm:^6.37.0"
-    "@metamask-previews/wallet": "npm:0.0.0-preview-b6651eda2"
+    "@metamask-previews/wallet": "npm:0.0.0-preview-d28b57d4b"
     "@metamask/abi-utils": "npm:^3.0.0"
     "@metamask/account-api": "npm:^1.0.4"
     "@metamask/account-tree-controller": "npm:^7.2.0"
