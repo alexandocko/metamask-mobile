@@ -1,3 +1,4 @@
+import type { Quote } from '@metamask/ramps-controller';
 import {
   getCheckoutContext,
   getWidgetRedirectConfig,
@@ -38,7 +39,7 @@ describe('getWidgetRedirectConfig', () => {
         browser: 'IN_APP_OS_BROWSER',
       },
     },
-  };
+  } as unknown as Quote;
 
   it('builds the same deeplink for prefixed and stripped provider ids', () => {
     const prefixed = getWidgetRedirectConfig(
