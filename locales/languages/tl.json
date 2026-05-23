@@ -279,6 +279,8 @@
     "import_srp": "I-import gamit ang Lihim na Parirala sa Pagbawi",
     "sign_in_with_google": "Mag-sign in sa Google",
     "sign_in_with_apple": "Mag-sign in sa Apple",
+    "continue_with_telegram": "Continue with Telegram",
+    "sign_in_with_telegram": "Sign in with Telegram",
     "your_wallet": "Matagumpay mong nai-reset ang iyong wallet!",
     "delete_current": "I-reset ang kasalukuyang wallet",
     "have_existing_wallet": "Mayroon na akong wallet",
@@ -1469,6 +1471,22 @@
       "select_token_to_pay_with": "Pumili ng token na ibabayad bago ilagay ang order mo",
       "initializing": "Sinisimulan ang order..."
     },
+    "slippage": {
+      "config_title": "Set slippage",
+      "config_description": "Your transaction won't go through if the price shifts beyond this threshold.",
+      "set": "Set",
+      "cancel": "Cancel",
+      "custom": "Custom",
+      "use_custom_title": "Use custom slippage",
+      "row_format": "Est: {{est}}% / Max: {{value}}%",
+      "row_format_pending": "Est: -- / Max: {{value}}%",
+      "input_label": "Max slippage percentage",
+      "decrement_label": "Decrease slippage",
+      "increment_label": "Increase slippage",
+      "out_of_range": "Enter a value between {{min}}% and {{max}}%",
+      "slippage": "Slippage",
+      "exceeds_max": "Estimated slippage ({{est}}%) exceeds your max slippage ({{max}}%). Increase the cap or reduce the order size."
+    },
     "price_deviation_warning": {
       "message": "Masyado ng malayo ang presyo mula sa presyo ng spot. Hindi mabubuksan ang mga bagong posisyon sa pagkakataong ito."
     },
@@ -1839,7 +1857,7 @@
         "provider_fee": "Bayad sa provider",
         "bridge_fee": "Bayad sa bridge",
         "total": "Kabuuang bayarin",
-        "discount_message": "Nakaka-save ka ng {{percentage}}% gamit ang mga Reward sa MetaMask."
+        "discount_message": "You're saving {{percentage}}% on fees as a VIP."
       },
       "closing_fees": {
         "title": "Mga bayarin sa pagsasara",
@@ -1924,6 +1942,10 @@
       "pay_with": {
         "title": "Magbayad gamit ang",
         "content": "Piliin kung aling token o balanse ang gagamitin para bayaran ang trade na ito. Maaari kang magbayad gamit ang balanse ng mga Perp mo o pumili ng ibang token mula sa wallet mo."
+      },
+      "slippage": {
+        "title": "Estimated slippage",
+        "content": "Slippage is the difference between the expected price and the price at which your order is filled. Larger orders or low-liquidity markets may have higher slippage."
       }
     },
     "connection": {
@@ -2240,6 +2262,21 @@
   },
   "predict": {
     "title": "Mga Predisksyon ng MetaMask",
+    "homepage_discovery": {
+      "btc_title": "BTC Price: {{price}}",
+      "btc_price_to_beat": "Price to beat: {{price}}",
+      "btc_live": "Live",
+      "nba_2026_champion_title": "NBA 2026 Champion",
+      "fifa_world_cup_2026_title": "FIFA World Cup 2026",
+      "events_in_total": "{{count}} events in total",
+      "events_in_total_overflow": "{{count}}+ events in total",
+      "props_pill": "Props",
+      "championship_unavailable": "No championship market to show yet.",
+      "mens_world_cup_title": "Men's World Cup",
+      "mens_world_cup_events": "{{count}} men's world cup events",
+      "mens_world_cup_events_overflow": "{{count}}+ men's world cup events",
+      "winner_unavailable": "No World Cup markets to show yet."
+    },
     "world_cup": {
       "title": "World Cup",
       "banner_title": "World Cup 2026",
@@ -2311,7 +2348,9 @@
       "ended": "Natapos na",
       "resolved_early": "Naresolba nang maaga",
       "disclaimer": "Posibleng hindi kumpleto ang impormasyong ito. Mag-isang pinamamahalaan ng Polymarket ang lahat ng panuntunan ng market, pamantayan ng resolusyon, at mga panghuling resulta. Dapat na gawin ang mga trade batay sa kumpletong panuntunan na nasa Polymarket.",
-      "your_picks": "Mga pinipili mo"
+      "your_picks": "Mga pinipili mo",
+      "entry": "Entry",
+      "claim": "Claim"
     },
     "tab": {
       "no_predictions_description": "Lilitaw ang mga prediksyon mo dito, na ipinakikita ang taya at pagkilos ng market mo.",
@@ -2327,6 +2366,7 @@
     "outcome_groups": {
       "game_lines": "Mga Linya ng Laro",
       "first_half": "1st Half",
+      "first_set": "1st Set",
       "team_totals": "Mga Kabuuan ng Team",
       "touchdowns": "Mga Touchdown",
       "rushing": "Rushing",
@@ -2348,6 +2388,7 @@
       "moneyline": "Moneyline",
       "spreads": "Mga Spread",
       "totals": "Mga Kabuuan",
+      "nrfi": "Will there be a run in the first inning?",
       "both_teams_to_score": "Ii-score ang Magkabilang Team",
       "first_half_moneyline": "1H Moneyline",
       "first_half_spreads": "1H Mga Spread",
@@ -2367,10 +2408,16 @@
       "soccer_anytime_goalscorer": "Mga Goalscorer",
       "soccer_exact_score": "Eksaktong Score",
       "soccer_halftime_result": "Resulta sa Halftime",
-      "total_corners": "Mga Corner"
+      "total_corners": "Mga Corner",
+      "tennis_set_totals": "Total Sets",
+      "tennis_match_totals": "Total Games",
+      "tennis_first_set_totals": "1st Set Total Games",
+      "tennis_first_set_winner": "1st Set Winner",
+      "tennis_completed_match": "Completed Match"
     },
     "sell_position": "Posisyon sa pagbebenta",
     "odds": "Mga Odd",
+    "your_positions": "Your positions",
     "cash_out": "Mag-cash out",
     "cash_out_info": "Idadagdag ang mga pondo sa iyong available na balanse",
     "buy_preview_outcome_at_price": "{{outcome}} sa {{price}}",
@@ -2600,7 +2647,10 @@
       "order_not_fully_filled": "Hindi na-fill ang order mo",
       "buy_order_not_fully_filled": "Hindi sapat ang mga share na available sa market price para mailagay ang order mo sa ngayon.",
       "sell_order_not_fully_filled": "Walang sapat na demand sa market price para mag-cash out sa ngayon.",
-      "preview_not_available": "Wala available na preview"
+      "preview_not_available": "Wala available na preview",
+      "market_pending_resolution": "This market is pending resolution.",
+      "market_not_accepting_bets": "This market is no longer accepting bets.",
+      "market_bettable_check_failed": "We couldn't confirm this market is accepting bets. Try again."
     },
     "game_details_footer": {
       "pick_a_winner": "Pumili ng nanalo",
@@ -5239,6 +5289,11 @@
       "title": "Walang makikita rito",
       "message": "Dito mo mahahanap ang mga notipikasyon kapag may aktibidad sa wallet mo. "
     },
+    "disabled": {
+      "title": "Turn on notifications",
+      "message": "Choose what you're notified about and how.",
+      "cta": "Notification settings"
+    },
     "list": {
       "0": "Lahat",
       "1": "Wallet",
@@ -6676,16 +6731,25 @@
     "apy_currency_suffix": " • mUSD",
     "apy_info_label": "Impormasyon ng APY",
     "onboarding": {
-      "step_progress": "Hakbang {{current}} ng {{total}}",
-      "title": "Magdagdag ng pera",
-      "description": "Pondohan ang account mo at simulang kumita ng APY.",
-      "add": "Magdagdag ng pondo",
-      "step2_title": "Kunin ang MetaMask Card mo",
-      "step2_description": "Gastusin ang balanse mo sa Money habang kumikita ito, saanman tinatanggap ang Mastercard.",
-      "step2_cta": "Kunin ang card",
-      "link_card_title": "I-link ang MetaMask Card mo",
-      "link_card_description": "Gastusin ang balanse mo habang kumikita ito, saanman tinatanggap ang Mastercard.",
-      "link_card_cta": "I-link ang card"
+      "step_1": {
+        "title": "Fund your account",
+        "description": "Drop in some funds. Your Money account will handle the rest.",
+        "cta": "Add funds"
+      },
+      "step_2": {
+        "no_card_account": {
+          "title": "Get your MetaMask Card",
+          "description": "Spend your balance while it earns, anywhere Mastercard is accepted.",
+          "cta_primary": "Get card",
+          "cta_secondary": "Skip"
+        },
+        "unlinked_card_account": {
+          "title": "Link your MetaMask Card",
+          "description": "Spend your balance while it earns, anywhere Mastercard is accepted.",
+          "cta_primary": "Link card",
+          "cta_secondary": "Skip"
+        }
+      }
     },
     "rive_onboarding": {
       "step1_title": "Narito ang mga money account",
@@ -6730,9 +6794,9 @@
       "description": "Tingnan kung paano maaaring lumago ang pera mo sa paglipas ng panahon sa pamamagitan ng pag-convert ng iyong crypto sa mUSD.",
       "description_with_amounts_prefix": "I-convert ang iyong {{total}} sa mga asset at maaari kang kumita ng hanggang",
       "description_with_amounts_suffix": "sa isang taon.",
-      "convert": "I-convert",
+      "add": "Add",
       "convert_cta": "I-convert ang iyong crypto",
-      "no_fee": "Walang bayad sa MetaMask",
+      "no_fee": "No fee",
       "view_all": "Tingnan lahat",
       "view_potential_earnings": "Tingnan ang potensyal na kikitain"
     },
@@ -6779,8 +6843,7 @@
       "convert_crypto_description": "Mula sa anumang account",
       "deposit_funds": "Magdeposito ng mga pondo",
       "deposit_funds_description": "Mula sa debit card o bangko",
-      "move_musd": "Ilipat ang iyong {{amount}} mUSD",
-      "move_musd_no_amount": "Ilipat ang iyong mUSD",
+      "move_musd": "Add your {{amount}} mUSD",
       "move_musd_description": "Mula sa iyong balanse",
       "receive_external": "Tumanggap mula sa panlabas na wallet",
       "coming_soon": "Paparating na"
@@ -6856,8 +6919,9 @@
     "how_it_works_page": {
       "header_title": "Pera",
       "section_title": "Paano ito gumagana",
-      "description_1": "Magdeposito ng mUSD sa Money account mo at kumita ng hanggang {{percentage}}% APY (variable) nang awtomatiko. Napupunta ang mga pondo sa DeFi vault na kumikita ng mga return sa lahat ng na-audit na lending market—nang walang pag-stake, pag-claim, mga lock-up.",
+      "description_1": "Deposit mUSD into your Money account and earn up to {{percentage}}% APY (variable) automatically. Funds go into a DeFi vault, curated by Veda and Steakhouse Financial, that generates returns across audited lending markets. No staking, no claiming, no lock-ups.",
       "description_2": "Ang balanse mo sa Money ang balanseng puwede mong gastusin. I-link ang MetaMask Card mo para magamit ito sa 150M+ merchant sa buong mundo. Patuloy na kikita ang pera mo hanggang sa gastusin mo ito.",
+      "description_3": "Money account is powered by Monad.",
       "faq_title": "Mga madalas itanong",
       "faq_placeholder_answer": "Paparating na.",
       "faq_q1": "Paano gumagana ang {{percentage}}% APY?",
@@ -7132,6 +7196,9 @@
       "last_used": "Huling ginamit",
       "bank_and_card": "Bangko at card",
       "crypto": "Crypto",
+      "perps": "Perps",
+      "perps_account": "Perps account",
+      "add": "Add",
       "available_balance": "{{balance}} available",
       "other_assets": "Iba ang mga asset",
       "other_assets_description": "Pumili mula sa mga token mo"
@@ -7430,6 +7497,9 @@
     "title": "Mag-bridge",
     "submitting_transaction": "Isinusumite",
     "fetching_quote": "Kumukuha ng quote",
+    "fee_includes": "Includes",
+    "fee_percentage": "{{feePercentage}}%",
+    "fee_percentage_meta_mask": "{{feePercentage}}% MM fee.",
     "fee_disclaimer": "Kabilang ang {{feePercentage}}% na bayad sa MetaMask.",
     "no_mm_fee": "Walang bayad sa MM",
     "token_suspicious": "Kahina-hinala",
@@ -7531,9 +7601,11 @@
   "account_status": {
     "account_already_exists": "Mayroon nang ganitong wallet",
     "account_already_exists_description": "Mayroon nang wallet na gumagamit ng \"{{accountName}}\". Gusto mo bang subukan na lang na mag-log in?",
+    "account_already_exists_telegram_description": "A wallet is already linked to this Telegram account. Do you want to unlock this wallet?",
     "log_in": "Mag-log in",
     "account_not_found": "Hindi nahanap ang wallet",
     "account_not_found_description": "Hindi namin mahanap ang wallet para sa \"{{accountName}}\". Gusto mo bang gumawa ng bago gamit ang login na ito?",
+    "account_not_found_telegram_description": "We couldn't find a wallet linked to this Telegram account. Do you want to create a new one with this login?",
     "create_new_wallet": "Gumawa ng bagong wallet",
     "use_different_login_method": "Gumamit ng ibang paraan ng pag-log in",
     "account_already_exists_ios_new_user_description": "Mayroon nang wallet na gumagamit ng \"{{accountName}}\". Gusto mo bang i-unlock ang wallet na ito?",
@@ -8457,18 +8529,25 @@
     "main_title": "Mga Reward",
     "vip": {
       "bps_unit": "bps",
+      "badge_label": "VIP {{tier}}",
       "swaps_label": "Mga Swap",
       "perps_label": "Perps",
-      "error_title": "We couldn’t load your VIP dashboard",
-      "error_description": "Check your connection and try again.",
-      "retry_button": "Retry",
-      "tiers_title": "Tiers",
-      "tier_thresholds": "{{points}} total",
-      "bps_value": "{{bps}} bps",
+      "points_label": "Points",
+      "revenue_share_label": "Rev share",
+      "points_from_referrals_label": "Points from referrals",
+      "referrals_label": "VIP Referrals",
+      "tier_benefits_title": "Tier benefits",
+      "next_tier_value": "{{value}} next tier",
       "equity_rebate_label": "Equity rebate",
       "equity_rebate_header": "Equity rebate: {{value}}%",
       "equity_rebate_next_tier": "↑ {{value}}% at next tier",
-      "equity_rebate_top_tier": "Top tier reached."
+      "equity_rebate_top_tier": "Top tier reached.",
+      "error_title": "Hindi namin mai-load ang iyong VIP dashboard",
+      "error_description": "Suriin ang iyong koneksyon at subukang muli.",
+      "retry_button": "Subukang muli",
+      "tiers_title": "Mga Tier",
+      "tier_thresholds": "{{points}} total",
+      "bps_value": "{{bps}} bps"
     },
     "referral_title": "Mga Referral",
     "referral_stats_earned_from_referrals": "Nakuha mula sa mga referral",
@@ -9332,5 +9411,8 @@
       "social": "Sosyal",
       "other": "Iba pa"
     }
+  },
+  "stepper_card": {
+    "more_information": "More information"
   }
 }

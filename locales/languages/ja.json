@@ -279,6 +279,8 @@
     "import_srp": "シークレットリカバリーフレーズを使用してインポートする",
     "sign_in_with_google": "Googleでサインイン",
     "sign_in_with_apple": "Appleでサインイン",
+    "continue_with_telegram": "Continue with Telegram",
+    "sign_in_with_telegram": "Sign in with Telegram",
     "your_wallet": "ウォレットのリセットが完了しました。",
     "delete_current": "現在のウォレットをリセットする",
     "have_existing_wallet": "既存のウォレットがあります",
@@ -1469,6 +1471,22 @@
       "select_token_to_pay_with": "発注の前に決済に使用するトークンを選択してください",
       "initializing": "注文を初期化しています..."
     },
+    "slippage": {
+      "config_title": "Set slippage",
+      "config_description": "Your transaction won't go through if the price shifts beyond this threshold.",
+      "set": "Set",
+      "cancel": "Cancel",
+      "custom": "Custom",
+      "use_custom_title": "Use custom slippage",
+      "row_format": "Est: {{est}}% / Max: {{value}}%",
+      "row_format_pending": "Est: -- / Max: {{value}}%",
+      "input_label": "Max slippage percentage",
+      "decrement_label": "Decrease slippage",
+      "increment_label": "Increase slippage",
+      "out_of_range": "Enter a value between {{min}}% and {{max}}%",
+      "slippage": "Slippage",
+      "exceeds_max": "Estimated slippage ({{est}}%) exceeds your max slippage ({{max}}%). Increase the cap or reduce the order size."
+    },
     "price_deviation_warning": {
       "message": "価格がスポット価格から離れ過ぎました。現在、新しいポジションをオープンすることはできません。"
     },
@@ -1839,7 +1857,7 @@
         "provider_fee": "プロバイダーの手数料",
         "bridge_fee": "ブリッジ手数料",
         "total": "合計手数料",
-        "discount_message": "MetaMaskリワードで{{percentage}}%の節約になります。"
+        "discount_message": "You're saving {{percentage}}% on fees as a VIP."
       },
       "closing_fees": {
         "title": "クロージング手数料",
@@ -1924,6 +1942,10 @@
       "pay_with": {
         "title": "支払方法:",
         "content": "この取引の支払いに使用するトークンまたは残高をお選びください。パーペチュアル残高で支払うか、ウォレットから別のトークンを選択することができます。"
+      },
+      "slippage": {
+        "title": "Estimated slippage",
+        "content": "Slippage is the difference between the expected price and the price at which your order is filled. Larger orders or low-liquidity markets may have higher slippage."
       }
     },
     "connection": {
@@ -2240,6 +2262,21 @@
   },
   "predict": {
     "title": "MetaMask 予測",
+    "homepage_discovery": {
+      "btc_title": "BTC Price: {{price}}",
+      "btc_price_to_beat": "Price to beat: {{price}}",
+      "btc_live": "Live",
+      "nba_2026_champion_title": "NBA 2026 Champion",
+      "fifa_world_cup_2026_title": "FIFA World Cup 2026",
+      "events_in_total": "{{count}} events in total",
+      "events_in_total_overflow": "{{count}}+ events in total",
+      "props_pill": "Props",
+      "championship_unavailable": "No championship market to show yet.",
+      "mens_world_cup_title": "Men's World Cup",
+      "mens_world_cup_events": "{{count}} men's world cup events",
+      "mens_world_cup_events_overflow": "{{count}}+ men's world cup events",
+      "winner_unavailable": "No World Cup markets to show yet."
+    },
     "world_cup": {
       "title": "ワールドカップ",
       "banner_title": "ワールドカップ2026",
@@ -2311,7 +2348,9 @@
       "ended": "終了",
       "resolved_early": "早期確定",
       "disclaimer": "この情報は不完全である可能性があります。すべての市場ルール、解決基準、最終結果は、Polymarketのみが管理します。取引は、Polymarketで入手可能な完全なルールに基づいて行う必要があります。",
-      "your_picks": "選択項目"
+      "your_picks": "選択項目",
+      "entry": "Entry",
+      "claim": "Claim"
     },
     "tab": {
       "no_predictions_description": "ここにお客様の予測、保有額、およびマーケットの動きが表示されます。",
@@ -2327,6 +2366,7 @@
     "outcome_groups": {
       "game_lines": "ゲームライン",
       "first_half": "前半",
+      "first_set": "1st Set",
       "team_totals": "チーム合計",
       "touchdowns": "タッチダウン",
       "rushing": "ラッシング",
@@ -2348,6 +2388,7 @@
       "moneyline": "マネーライン",
       "spreads": "スプレッド",
       "totals": "合計",
+      "nrfi": "Will there be a run in the first inning?",
       "both_teams_to_score": "両チームがスコア",
       "first_half_moneyline": "前半のマネーライン",
       "first_half_spreads": "前半のスプレッド",
@@ -2367,10 +2408,16 @@
       "soccer_anytime_goalscorer": "ゴールスコアラー",
       "soccer_exact_score": "正確なスコア",
       "soccer_halftime_result": "ハーフタイムの結果",
-      "total_corners": "コーナー"
+      "total_corners": "コーナー",
+      "tennis_set_totals": "Total Sets",
+      "tennis_match_totals": "Total Games",
+      "tennis_first_set_totals": "1st Set Total Games",
+      "tennis_first_set_winner": "1st Set Winner",
+      "tennis_completed_match": "Completed Match"
     },
     "sell_position": "ポジションを売却",
     "odds": "オッズ",
+    "your_positions": "Your positions",
     "cash_out": "キャッシュアウト",
     "cash_out_info": "資金は利用可能残高に追加されます",
     "buy_preview_outcome_at_price": "{{price}}で{{outcome}}",
@@ -2600,7 +2647,10 @@
       "order_not_fully_filled": "注文に失敗しました",
       "buy_order_not_fully_filled": "現在、市場価格で発注するのに十分な株がありません。",
       "sell_order_not_fully_filled": "現在、市場価格で出金するのに十分な需要がありません。",
-      "preview_not_available": "プレビューが利用できません"
+      "preview_not_available": "プレビューが利用できません",
+      "market_pending_resolution": "This market is pending resolution.",
+      "market_not_accepting_bets": "This market is no longer accepting bets.",
+      "market_bettable_check_failed": "We couldn't confirm this market is accepting bets. Try again."
     },
     "game_details_footer": {
       "pick_a_winner": "勝者を選択",
@@ -5239,6 +5289,11 @@
       "title": "ここに表示する内容はありません",
       "message": "ウォレットにアクティビティがあると、ここに通知が表示されます。"
     },
+    "disabled": {
+      "title": "Turn on notifications",
+      "message": "Choose what you're notified about and how.",
+      "cta": "Notification settings"
+    },
     "list": {
       "0": "すべて",
       "1": "ウォレット",
@@ -6676,16 +6731,25 @@
     "apy_currency_suffix": " • mUSD",
     "apy_info_label": "APY情報",
     "onboarding": {
-      "step_progress": "ステップ{{current}}/{{total}}",
-      "title": "お金を追加",
-      "description": "アカウントに入金して、毎年複利で利息を得ましょう。",
-      "add": "資金を追加",
-      "step2_title": "MetaMaskカードを取得",
-      "step2_description": "Mastercardの取扱店であればどこでも、収益を得ると同時にマネー残高を使用できます。",
-      "step2_cta": "カードを取得",
-      "link_card_title": "MetaMaskカードをリンク",
-      "link_card_description": "Mastercardの取扱店であればどこでも、収益を得ると同時に残高を使えます。",
-      "link_card_cta": "カードをリンク"
+      "step_1": {
+        "title": "Fund your account",
+        "description": "Drop in some funds. Your Money account will handle the rest.",
+        "cta": "Add funds"
+      },
+      "step_2": {
+        "no_card_account": {
+          "title": "Get your MetaMask Card",
+          "description": "Spend your balance while it earns, anywhere Mastercard is accepted.",
+          "cta_primary": "Get card",
+          "cta_secondary": "Skip"
+        },
+        "unlinked_card_account": {
+          "title": "Link your MetaMask Card",
+          "description": "Spend your balance while it earns, anywhere Mastercard is accepted.",
+          "cta_primary": "Link card",
+          "cta_secondary": "Skip"
+        }
+      }
     },
     "rive_onboarding": {
       "step1_title": "マネーアカウントが新登場",
@@ -6730,9 +6794,9 @@
       "description": "仮想通貨をmUSDに換えることで、時間の経過とともにお金がどのように増えるかをご覧ください。",
       "description_with_amounts_prefix": "お持ちの資産{{total}}を変換すると、1年間で最大",
       "description_with_amounts_suffix": "の報酬を得られる可能性があります。",
-      "convert": "変換",
+      "add": "Add",
       "convert_cta": "仮想通貨を変換",
-      "no_fee": "MetaMaskの手数料なし",
+      "no_fee": "No fee",
       "view_all": "すべて表示",
       "view_potential_earnings": "獲得可能な収益を表示"
     },
@@ -6779,8 +6843,7 @@
       "convert_crypto_description": "任意のアカウントから",
       "deposit_funds": "資金を入金",
       "deposit_funds_description": "デビットカードまたは銀行から",
-      "move_musd": "{{amount}} mUSDを送金",
-      "move_musd_no_amount": "mUSDを送金",
+      "move_musd": "Add your {{amount}} mUSD",
       "move_musd_description": "残高から",
       "receive_external": "外部ウォレットから受け取る",
       "coming_soon": "近日追加予定"
@@ -6856,8 +6919,9 @@
     "how_it_works_page": {
       "header_title": "マネー",
       "section_title": "報酬獲得の仕組み",
-      "description_1": "マネーアカウントにmUSDを入金すると、最大{{percentage}}%のAPY (変動式) が自動的に得られます。資金はDeFiヴォールトに入れられ、監査対象のレンディング市場で利益を生み出します。ステーキングや請求は不要で、ロックアップもありません。",
+      "description_1": "Deposit mUSD into your Money account and earn up to {{percentage}}% APY (variable) automatically. Funds go into a DeFi vault, curated by Veda and Steakhouse Financial, that generates returns across audited lending markets. No staking, no claiming, no lock-ups.",
       "description_2": "マネー残高は使用可能な残高です。MetaMaskカードをリンクすれば、世界中の1億5千万以上のマーチャントで使用できます。資金は使うまで収益を生み続けます。",
+      "description_3": "Money account is powered by Monad.",
       "faq_title": "よくある質問",
       "faq_placeholder_answer": "近日追加予定.",
       "faq_q1": "{{percentage}}%のAPYが得られる仕組みとは？",
@@ -7132,6 +7196,9 @@
       "last_used": "前回の利用",
       "bank_and_card": "銀行とカード",
       "crypto": "仮想通貨",
+      "perps": "Perps",
+      "perps_account": "Perps account",
+      "add": "Add",
       "available_balance": "{{balance}}が利用可能",
       "other_assets": "その他の資産",
       "other_assets_description": "お持ちのトークンからお選びください"
@@ -7430,6 +7497,9 @@
     "title": "ブリッジ",
     "submitting_transaction": "送信中",
     "fetching_quote": "クォートを取得中",
+    "fee_includes": "Includes",
+    "fee_percentage": "{{feePercentage}}%",
+    "fee_percentage_meta_mask": "{{feePercentage}}% MM fee.",
     "fee_disclaimer": "{{feePercentage}}%のMetaMask手数料を含みます。",
     "no_mm_fee": "MM手数料なし",
     "token_suspicious": "不審",
@@ -7531,9 +7601,11 @@
   "account_status": {
     "account_already_exists": "ウォレットはすでに存在します",
     "account_already_exists_description": "「{{accountName}}」のウォレットはすでに存在します。ログインしますか？",
+    "account_already_exists_telegram_description": "A wallet is already linked to this Telegram account. Do you want to unlock this wallet?",
     "log_in": "ログイン",
     "account_not_found": "ウォレットが見つかりません",
     "account_not_found_description": "「{{accountName}}」のウォレットが見つかりません。このログイン情報で新しいウォレットを作成しますか？",
+    "account_not_found_telegram_description": "We couldn't find a wallet linked to this Telegram account. Do you want to create a new one with this login?",
     "create_new_wallet": "新規ウォレットを作成",
     "use_different_login_method": "別のログイン方法を使用",
     "account_already_exists_ios_new_user_description": "\"{{accountName}}\" を使用しているウォレットがすでに存在します。このウォレットのロックを解除しますか？",
@@ -8457,18 +8529,25 @@
     "main_title": "報酬",
     "vip": {
       "bps_unit": "bps",
-      "swaps_label": "Swaps",
-      "perps_label": "Perps",
-      "error_title": "We couldn’t load your VIP dashboard",
-      "error_description": "Check your connection and try again.",
-      "retry_button": "Retry",
-      "tiers_title": "Tiers",
-      "tier_thresholds": "{{points}} total",
-      "bps_value": "{{bps}} bps",
+      "badge_label": "VIP {{tier}}",
+      "swaps_label": "スワップ",
+      "perps_label": "パーペチュアル",
+      "points_label": "Points",
+      "revenue_share_label": "Rev share",
+      "points_from_referrals_label": "Points from referrals",
+      "referrals_label": "VIP Referrals",
+      "tier_benefits_title": "Tier benefits",
+      "next_tier_value": "{{value}} next tier",
       "equity_rebate_label": "Equity rebate",
       "equity_rebate_header": "Equity rebate: {{value}}%",
       "equity_rebate_next_tier": "↑ {{value}}% at next tier",
-      "equity_rebate_top_tier": "Top tier reached."
+      "equity_rebate_top_tier": "Top tier reached.",
+      "error_title": "VIPダッシュボードを読み込めませんでした",
+      "error_description": "接続を確認して、もう一度お試しください。",
+      "retry_button": "再試行",
+      "tiers_title": "レベル",
+      "tier_thresholds": "{{points}} total",
+      "bps_value": "{{bps}}bps"
     },
     "referral_title": "紹介",
     "referral_stats_earned_from_referrals": "紹介して報酬を獲得",
@@ -9332,5 +9411,8 @@
       "social": "社会",
       "other": "その他"
     }
+  },
+  "stepper_card": {
+    "more_information": "More information"
   }
 }

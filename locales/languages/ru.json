@@ -279,6 +279,8 @@
     "import_srp": "Импорт с помощью секретной фразы для восстановления",
     "sign_in_with_google": "Войти через Google",
     "sign_in_with_apple": "Войти через Apple",
+    "continue_with_telegram": "Continue with Telegram",
+    "sign_in_with_telegram": "Sign in with Telegram",
     "your_wallet": "Вы успешно сбросили настройки кошелька!",
     "delete_current": "Сбросить текущий кошелек",
     "have_existing_wallet": "У меня есть кошелек",
@@ -1469,6 +1471,22 @@
       "select_token_to_pay_with": "Выберите токен для оплаты перед размещением ордера",
       "initializing": "Инициализация ордера…"
     },
+    "slippage": {
+      "config_title": "Set slippage",
+      "config_description": "Your transaction won't go through if the price shifts beyond this threshold.",
+      "set": "Set",
+      "cancel": "Cancel",
+      "custom": "Custom",
+      "use_custom_title": "Use custom slippage",
+      "row_format": "Est: {{est}}% / Max: {{value}}%",
+      "row_format_pending": "Est: -- / Max: {{value}}%",
+      "input_label": "Max slippage percentage",
+      "decrement_label": "Decrease slippage",
+      "increment_label": "Increase slippage",
+      "out_of_range": "Enter a value between {{min}}% and {{max}}%",
+      "slippage": "Slippage",
+      "exceeds_max": "Estimated slippage ({{est}}%) exceeds your max slippage ({{max}}%). Increase the cap or reduce the order size."
+    },
     "price_deviation_warning": {
       "message": "Цена слишком сильно отклонилась от спотовой цены. Открытие новых позиций в данный момент невозможно."
     },
@@ -1839,7 +1857,7 @@
         "provider_fee": "Комиссия поставщика",
         "bridge_fee": "Комиссия моста",
         "total": "Итого комиссий",
-        "discount_message": "Вы экономите {{percentage}}% с Вознаграждениями MetaMask."
+        "discount_message": "You're saving {{percentage}}% on fees as a VIP."
       },
       "closing_fees": {
         "title": "Комиссии за закрытие",
@@ -1924,6 +1942,10 @@
       "pay_with": {
         "title": "Оплатить с помощью",
         "content": "Выберите, какой токен или баланс использовать для оплаты этой сделки. Вы можете оплатить с помощью баланса перпов или выбрать другой токен из своего кошелька."
+      },
+      "slippage": {
+        "title": "Estimated slippage",
+        "content": "Slippage is the difference between the expected price and the price at which your order is filled. Larger orders or low-liquidity markets may have higher slippage."
       }
     },
     "connection": {
@@ -2240,6 +2262,21 @@
   },
   "predict": {
     "title": "Прогнозы MetaMask",
+    "homepage_discovery": {
+      "btc_title": "BTC Price: {{price}}",
+      "btc_price_to_beat": "Price to beat: {{price}}",
+      "btc_live": "Live",
+      "nba_2026_champion_title": "NBA 2026 Champion",
+      "fifa_world_cup_2026_title": "FIFA World Cup 2026",
+      "events_in_total": "{{count}} events in total",
+      "events_in_total_overflow": "{{count}}+ events in total",
+      "props_pill": "Props",
+      "championship_unavailable": "No championship market to show yet.",
+      "mens_world_cup_title": "Men's World Cup",
+      "mens_world_cup_events": "{{count}} men's world cup events",
+      "mens_world_cup_events_overflow": "{{count}}+ men's world cup events",
+      "winner_unavailable": "No World Cup markets to show yet."
+    },
     "world_cup": {
       "title": "Чемпионат мира",
       "banner_title": "Чемпионат мира 2026 г.",
@@ -2311,7 +2348,9 @@
       "ended": "Завершено",
       "resolved_early": "Решено досрочно",
       "disclaimer": "Данная информация может быть неполной. Все рыночные правила, критерии разрешения споров и окончательные результаты регулируются исключительно Polymarket. Сделки следует совершать в соответствии с полными правилами, доступными на Polymarket.",
-      "your_picks": "Ваша подборка"
+      "your_picks": "Ваша подборка",
+      "entry": "Entry",
+      "claim": "Claim"
     },
     "tab": {
       "no_predictions_description": "Ваши прогнозы будут отображаться здесь, показывая вашу ставку и движение рынка.",
@@ -2327,6 +2366,7 @@
     "outcome_groups": {
       "game_lines": "Линии игры",
       "first_half": "1-я половина",
+      "first_set": "1st Set",
       "team_totals": "Тоталы команд",
       "touchdowns": "Тачдауны",
       "rushing": "Вынос",
@@ -2348,6 +2388,7 @@
       "moneyline": "Манилайн",
       "spreads": "Спреды",
       "totals": "Итоги",
+      "nrfi": "Will there be a run in the first inning?",
       "both_teams_to_score": "Обе команды забьют",
       "first_half_moneyline": "Манилайн 1-й пол.",
       "first_half_spreads": "Спреды 1-й пол.",
@@ -2367,10 +2408,16 @@
       "soccer_anytime_goalscorer": "Авторы голов",
       "soccer_exact_score": "Точный счет",
       "soccer_halftime_result": "Результат половины матча",
-      "total_corners": "Угловые"
+      "total_corners": "Угловые",
+      "tennis_set_totals": "Total Sets",
+      "tennis_match_totals": "Total Games",
+      "tennis_first_set_totals": "1st Set Total Games",
+      "tennis_first_set_winner": "1st Set Winner",
+      "tennis_completed_match": "Completed Match"
     },
     "sell_position": "Позиция на продажу",
     "odds": "Коэффициенты",
+    "your_positions": "Your positions",
     "cash_out": "Вывести деньги",
     "cash_out_info": "Средства будут зачислены на ваш доступный баланс.",
     "buy_preview_outcome_at_price": "{{outcome}} по {{price}}",
@@ -2600,7 +2647,10 @@
       "order_not_fully_filled": "Не удалось выполнить ваш ордер",
       "buy_order_not_fully_filled": "Недостаточно акций, доступных по рыночной цене, чтобы разместить ваш ордер прямо сейчас.",
       "sell_order_not_fully_filled": "На данный момент нет достаточного спроса по рыночной цене, чтобы обналичить.",
-      "preview_not_available": "Предпросмотр недоступен"
+      "preview_not_available": "Предпросмотр недоступен",
+      "market_pending_resolution": "This market is pending resolution.",
+      "market_not_accepting_bets": "This market is no longer accepting bets.",
+      "market_bettable_check_failed": "We couldn't confirm this market is accepting bets. Try again."
     },
     "game_details_footer": {
       "pick_a_winner": "Выберите победителя",
@@ -5239,6 +5289,11 @@
       "title": "Здесь не на что смотреть",
       "message": "Здесь вы можете найти уведомления, когда в вашем кошельке выполняются действия. "
     },
+    "disabled": {
+      "title": "Turn on notifications",
+      "message": "Choose what you're notified about and how.",
+      "cta": "Notification settings"
+    },
     "list": {
       "0": "Все",
       "1": "Кошелек",
@@ -6676,16 +6731,25 @@
     "apy_currency_suffix": " • mUSD",
     "apy_info_label": "Информация о годовом процентном доходе (APY)",
     "onboarding": {
-      "step_progress": "Шаг {{current}} из {{total}}",
-      "title": "Пополнить",
-      "description": "Пополните свой счет и начните зарабатывать годовые.",
-      "add": "Внести средства",
-      "step2_title": "Получите карту MetaMask Card",
-      "step2_description": "Тратьте свой баланс Money, пока он приносит доход, везде, где принимают Mastercard.",
-      "step2_cta": "Получить карту",
-      "link_card_title": "Привяжите карту MetaMask Card",
-      "link_card_description": "Тратьте свой баланс, пока он приносит доход, везде, где принимают Mastercard.",
-      "link_card_cta": "Привязать карту"
+      "step_1": {
+        "title": "Fund your account",
+        "description": "Drop in some funds. Your Money account will handle the rest.",
+        "cta": "Add funds"
+      },
+      "step_2": {
+        "no_card_account": {
+          "title": "Get your MetaMask Card",
+          "description": "Spend your balance while it earns, anywhere Mastercard is accepted.",
+          "cta_primary": "Get card",
+          "cta_secondary": "Skip"
+        },
+        "unlinked_card_account": {
+          "title": "Link your MetaMask Card",
+          "description": "Spend your balance while it earns, anywhere Mastercard is accepted.",
+          "cta_primary": "Link card",
+          "cta_secondary": "Skip"
+        }
+      }
     },
     "rive_onboarding": {
       "step1_title": "Денежные счета уже здесь",
@@ -6730,9 +6794,9 @@
       "description": "Посмотрите, как сумма ваших средств может вырасти со временем, если конвертировать вашу криптовалюту в mUSD.",
       "description_with_amounts_prefix": "Конвертируйте свои активы на сумму {{total}}, и вы сможете заработать до",
       "description_with_amounts_suffix": "за один год.",
-      "convert": "Конвертировать",
+      "add": "Add",
       "convert_cta": "Конвертировать криптовалюту",
-      "no_fee": "Без комиссии MetaMask",
+      "no_fee": "No fee",
       "view_all": "Смотреть все",
       "view_potential_earnings": "Посмотреть потенциальный доход"
     },
@@ -6779,8 +6843,7 @@
       "convert_crypto_description": "С любого счета",
       "deposit_funds": "Внести средства",
       "deposit_funds_description": "С дебетовой карты или банковского счета",
-      "move_musd": "Перевести ваши {{amount}} mUSD",
-      "move_musd_no_amount": "Перевести ваши mUSD",
+      "move_musd": "Add your {{amount}} mUSD",
       "move_musd_description": "С вашего баланса",
       "receive_external": "Получить с внешнего кошелька",
       "coming_soon": "Скоро появятся"
@@ -6856,8 +6919,9 @@
     "how_it_works_page": {
       "header_title": "Финансы",
       "section_title": "Как это работает",
-      "description_1": "Внесите mUSD на свой денежный счет и автоматически получайте до {{percentage}}% годовых (переменная ставка). Средства поступают в DeFi vault, который генерирует доход на проверенных рынках кредитования — без стейкинга, без клейминга, без блокировок.",
+      "description_1": "Deposit mUSD into your Money account and earn up to {{percentage}}% APY (variable) automatically. Funds go into a DeFi vault, curated by Veda and Steakhouse Financial, that generates returns across audited lending markets. No staking, no claiming, no lock-ups.",
       "description_2": "Ваш Денежный баланс — это ваш баланс для расходов. Привяжите свою карту MetaMask, чтобы расплачиваться в более чем 150 млн магазинов по всему миру. Ваши деньги продолжают приносить доход до того момента, пока вы их не потратите.",
+      "description_3": "Money account is powered by Monad.",
       "faq_title": "Часто задаваемые вопросы",
       "faq_placeholder_answer": "Скоро появятся.",
       "faq_q1": "Как работает ставка {{percentage}}% годовых?",
@@ -7132,6 +7196,9 @@
       "last_used": "Использовалось последним",
       "bank_and_card": "Банковский счет и карта",
       "crypto": "Крипто",
+      "perps": "Perps",
+      "perps_account": "Perps account",
+      "add": "Add",
       "available_balance": "Доступно {{balance}}",
       "other_assets": "Другие активы",
       "other_assets_description": "Выберите из ваших токенов"
@@ -7430,6 +7497,9 @@
     "title": "Мост",
     "submitting_transaction": "Выполняется отправка",
     "fetching_quote": "Получение котировки",
+    "fee_includes": "Includes",
+    "fee_percentage": "{{feePercentage}}%",
+    "fee_percentage_meta_mask": "{{feePercentage}}% MM fee.",
     "fee_disclaimer": "Включает {{feePercentage}}% комиссии MetaMask.",
     "no_mm_fee": "Без комиссии MM",
     "token_suspicious": "Подозрительный",
@@ -7531,9 +7601,11 @@
   "account_status": {
     "account_already_exists": "Кошелек уже существует",
     "account_already_exists_description": "Кошелек, использующий «{{accountName}}», уже существует. Хотите попробовать войти в него вместо этого?",
+    "account_already_exists_telegram_description": "A wallet is already linked to this Telegram account. Do you want to unlock this wallet?",
     "log_in": "Войти",
     "account_not_found": "Кошелек не найден",
     "account_not_found_description": "Мы не смогли найти кошелек для«{{accountName}}» Хотите создать новый с этим логином?",
+    "account_not_found_telegram_description": "We couldn't find a wallet linked to this Telegram account. Do you want to create a new one with this login?",
     "create_new_wallet": "Создать новый кошелек",
     "use_different_login_method": "Используйте другой способ входа",
     "account_already_exists_ios_new_user_description": "Кошелёк с именем «{{accountName}}» уже существует. Хотите разблокировать его?",
@@ -8456,19 +8528,26 @@
     },
     "main_title": "Награды",
     "vip": {
-      "bps_unit": "bps",
-      "swaps_label": "Swaps",
-      "perps_label": "Perps",
-      "error_title": "We couldn’t load your VIP dashboard",
-      "error_description": "Check your connection and try again.",
-      "retry_button": "Retry",
-      "tiers_title": "Tiers",
-      "tier_thresholds": "{{points}} total",
-      "bps_value": "{{bps}} bps",
+      "bps_unit": "базисные пункты",
+      "badge_label": "VIP {{tier}}",
+      "swaps_label": "Свопы",
+      "perps_label": "Перпы",
+      "points_label": "Points",
+      "revenue_share_label": "Rev share",
+      "points_from_referrals_label": "Points from referrals",
+      "referrals_label": "VIP Referrals",
+      "tier_benefits_title": "Tier benefits",
+      "next_tier_value": "{{value}} next tier",
       "equity_rebate_label": "Equity rebate",
       "equity_rebate_header": "Equity rebate: {{value}}%",
       "equity_rebate_next_tier": "↑ {{value}}% at next tier",
-      "equity_rebate_top_tier": "Top tier reached."
+      "equity_rebate_top_tier": "Top tier reached.",
+      "error_title": "Нам не удалось загрузить вашу VIP-панель",
+      "error_description": "Проверьте соединение и повторите попытку.",
+      "retry_button": "Повтор",
+      "tiers_title": "Уровни",
+      "tier_thresholds": "{{points}} total",
+      "bps_value": "{{bps}} базисных пункта(-ов)"
     },
     "referral_title": "Рефералы",
     "referral_stats_earned_from_referrals": "Заработано на рефералах",
@@ -9332,5 +9411,8 @@
       "social": "Социальные вопросы",
       "other": "Другое"
     }
+  },
+  "stepper_card": {
+    "more_information": "More information"
   }
 }

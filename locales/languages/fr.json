@@ -279,6 +279,8 @@
     "import_srp": "Importer en utilisant la phrase secrète de récupération",
     "sign_in_with_google": "Se connecter avec Google",
     "sign_in_with_apple": "Se connecter avec Apple",
+    "continue_with_telegram": "Continue with Telegram",
+    "sign_in_with_telegram": "Sign in with Telegram",
     "your_wallet": "Vous avez réinitialisé avec succès votre portefeuille !",
     "delete_current": "Réinitialiser le portefeuille actuel",
     "have_existing_wallet": "J’ai déjà un portefeuille",
@@ -1469,6 +1471,22 @@
       "select_token_to_pay_with": "Veuillez sélectionner un jeton pour effectuer le paiement avant de passer votre ordre de bourse",
       "initializing": "Initialisation de l’ordre…"
     },
+    "slippage": {
+      "config_title": "Set slippage",
+      "config_description": "Your transaction won't go through if the price shifts beyond this threshold.",
+      "set": "Set",
+      "cancel": "Cancel",
+      "custom": "Custom",
+      "use_custom_title": "Use custom slippage",
+      "row_format": "Est: {{est}}% / Max: {{value}}%",
+      "row_format_pending": "Est: -- / Max: {{value}}%",
+      "input_label": "Max slippage percentage",
+      "decrement_label": "Decrease slippage",
+      "increment_label": "Increase slippage",
+      "out_of_range": "Enter a value between {{min}}% and {{max}}%",
+      "slippage": "Slippage",
+      "exceeds_max": "Estimated slippage ({{est}}%) exceeds your max slippage ({{max}}%). Increase the cap or reduce the order size."
+    },
     "price_deviation_warning": {
       "message": "Le prix s’est trop éloigné du prix au comptant. Aucune nouvelle position ne peut être ouverte pour le moment."
     },
@@ -1839,7 +1857,7 @@
         "provider_fee": "Commission du fournisseur",
         "bridge_fee": "Frais de passerelle",
         "total": "Montant total des frais",
-        "discount_message": "Vous économisez {{percentage}} % avec les récompenses MetaMask."
+        "discount_message": "You're saving {{percentage}}% on fees as a VIP."
       },
       "closing_fees": {
         "title": "Frais de clôture",
@@ -1924,6 +1942,10 @@
       "pay_with": {
         "title": "Payer avec",
         "content": "Choisissez le jeton ou le solde à utiliser pour financer cet ordre. Vous pouvez le financer en utilisant le solde de votre compte de trading de contrats à terme ou sélectionner un autre jeton dans votre portefeuille."
+      },
+      "slippage": {
+        "title": "Estimated slippage",
+        "content": "Slippage is the difference between the expected price and the price at which your order is filled. Larger orders or low-liquidity markets may have higher slippage."
       }
     },
     "connection": {
@@ -2240,6 +2262,21 @@
   },
   "predict": {
     "title": "Prédictions MetaMask",
+    "homepage_discovery": {
+      "btc_title": "BTC Price: {{price}}",
+      "btc_price_to_beat": "Price to beat: {{price}}",
+      "btc_live": "Live",
+      "nba_2026_champion_title": "NBA 2026 Champion",
+      "fifa_world_cup_2026_title": "FIFA World Cup 2026",
+      "events_in_total": "{{count}} events in total",
+      "events_in_total_overflow": "{{count}}+ events in total",
+      "props_pill": "Props",
+      "championship_unavailable": "No championship market to show yet.",
+      "mens_world_cup_title": "Men's World Cup",
+      "mens_world_cup_events": "{{count}} men's world cup events",
+      "mens_world_cup_events_overflow": "{{count}}+ men's world cup events",
+      "winner_unavailable": "No World Cup markets to show yet."
+    },
     "world_cup": {
       "title": "Coupe du monde",
       "banner_title": "Coupe du monde 2026",
@@ -2311,7 +2348,9 @@
       "ended": "Terminé",
       "resolved_early": "Résolu prématurément",
       "disclaimer": "Ces informations peuvent être incomplètes. Toutes les règles du marché, les critères de résolution et les résultats finaux sont régis exclusivement par Polymarket. Les ordres de bourse doivent être exécutés conformément à l’ensemble des règles disponibles sur Polymarket.",
-      "your_picks": "Vos pronostics"
+      "your_picks": "Vos pronostics",
+      "entry": "Entry",
+      "claim": "Claim"
     },
     "tab": {
       "no_predictions_description": "Vos prédictions apparaîtront ici, indiquant votre mise et l’évolution du marché.",
@@ -2327,6 +2366,7 @@
     "outcome_groups": {
       "game_lines": "Cotes du match",
       "first_half": "1ʳᵉ mi-temps",
+      "first_set": "1st Set",
       "team_totals": "Total par équipe",
       "touchdowns": "Touchdowns",
       "rushing": "Course",
@@ -2348,6 +2388,7 @@
       "moneyline": "Pari sur le vainqueur",
       "spreads": "Écarts",
       "totals": "Totaux",
+      "nrfi": "Will there be a run in the first inning?",
       "both_teams_to_score": "Les deux équipes marquent",
       "first_half_moneyline": "Vainqueur 1ʳᵉ mi-temps",
       "first_half_spreads": "Écart de points - 1ʳᵉ mi-temps",
@@ -2367,10 +2408,16 @@
       "soccer_anytime_goalscorer": "Buteurs",
       "soccer_exact_score": "Score exact",
       "soccer_halftime_result": "Résultat à la mi-temps",
-      "total_corners": "Corners"
+      "total_corners": "Corners",
+      "tennis_set_totals": "Total Sets",
+      "tennis_match_totals": "Total Games",
+      "tennis_first_set_totals": "1st Set Total Games",
+      "tennis_first_set_winner": "1st Set Winner",
+      "tennis_completed_match": "Completed Match"
     },
     "sell_position": "Position de vente",
     "odds": "Cotes",
+    "your_positions": "Your positions",
     "cash_out": "Encaisser",
     "cash_out_info": "Les fonds seront ajoutés à votre solde disponible",
     "buy_preview_outcome_at_price": "{{outcome}} à {{price}} ",
@@ -2600,7 +2647,10 @@
       "order_not_fully_filled": "Votre ordre n’a pas pu être exécuté",
       "buy_order_not_fully_filled": "Il n’y a actuellement pas suffisamment d’actions disponibles au prix du marché pour passer votre ordre.",
       "sell_order_not_fully_filled": "Il n’y a actuellement pas assez de demande au prix du marché pour effectuer un retrait.",
-      "preview_not_available": "Aucun aperçu disponible"
+      "preview_not_available": "Aucun aperçu disponible",
+      "market_pending_resolution": "This market is pending resolution.",
+      "market_not_accepting_bets": "This market is no longer accepting bets.",
+      "market_bettable_check_failed": "We couldn't confirm this market is accepting bets. Try again."
     },
     "game_details_footer": {
       "pick_a_winner": "Choisissez un gagnant",
@@ -5239,6 +5289,11 @@
       "title": "Rien à voir ici",
       "message": "C’est ici qu’apparaitront les notifications vous informant qu’une activité a été détectée dans votre portefeuille. "
     },
+    "disabled": {
+      "title": "Turn on notifications",
+      "message": "Choose what you're notified about and how.",
+      "cta": "Notification settings"
+    },
     "list": {
       "0": "Tout",
       "1": "Portefeuille",
@@ -6676,16 +6731,25 @@
     "apy_currency_suffix": " • mUSD",
     "apy_info_label": "Informations sur le taux de rendement annuel",
     "onboarding": {
-      "step_progress": "Étape {{current}} sur {{total}}",
-      "title": "Ajouter de l’argent",
-      "description": "Approvisionnez votre compte et commencez à percevoir un rendement annuel.",
-      "add": "Ajouter des fonds",
-      "step2_title": "Obtenez votre carte MetaMask Card",
-      "step2_description": "Dépensez l’argent que vous avez déposé sur votre compte Money tout en le faisant fructifier, partout où la carte Mastercard est acceptée.",
-      "step2_cta": "Obtenir une carte",
-      "link_card_title": "Associez votre carte MetaMask Card",
-      "link_card_description": "Dépensez votre argent tout en le faisant fructifier, partout où la carte Mastercard est acceptée.",
-      "link_card_cta": "Associer une carte"
+      "step_1": {
+        "title": "Fund your account",
+        "description": "Drop in some funds. Your Money account will handle the rest.",
+        "cta": "Add funds"
+      },
+      "step_2": {
+        "no_card_account": {
+          "title": "Get your MetaMask Card",
+          "description": "Spend your balance while it earns, anywhere Mastercard is accepted.",
+          "cta_primary": "Get card",
+          "cta_secondary": "Skip"
+        },
+        "unlinked_card_account": {
+          "title": "Link your MetaMask Card",
+          "description": "Spend your balance while it earns, anywhere Mastercard is accepted.",
+          "cta_primary": "Link card",
+          "cta_secondary": "Skip"
+        }
+      }
     },
     "rive_onboarding": {
       "step1_title": "Les comptes Money sont disponibles",
@@ -6730,9 +6794,9 @@
       "description": "Découvrez comment votre argent peut fructifier au fil du temps en convertissant vos crypto-monnaies en mUSD.",
       "description_with_amounts_prefix": "Convertissez vos {{total}} en actifs et vous pourriez gagner jusqu’à",
       "description_with_amounts_suffix": "en un an.",
-      "convert": "Convertir",
+      "add": "Add",
       "convert_cta": "Convertissez vos crypto-monnaies",
-      "no_fee": "Pas de frais MetaMask",
+      "no_fee": "No fee",
       "view_all": "Tout afficher",
       "view_potential_earnings": "Afficher les gains potentiels"
     },
@@ -6779,8 +6843,7 @@
       "convert_crypto_description": "Depuis n’importe quel compte",
       "deposit_funds": "Déposer des fonds",
       "deposit_funds_description": "Depuis une carte de débit ou un compte bancaire",
-      "move_musd": "Transférez vos {{amount}} mUSD",
-      "move_musd_no_amount": "Transférez vos mUSD",
+      "move_musd": "Add your {{amount}} mUSD",
       "move_musd_description": "Depuis votre solde",
       "receive_external": "Recevoir depuis un portefeuille externe",
       "coming_soon": "Bientôt disponible"
@@ -6856,8 +6919,9 @@
     "how_it_works_page": {
       "header_title": "Money",
       "section_title": "Comment ça marche ",
-      "description_1": "Déposez des mUSD sur votre compte Money et bénéficiez automatiquement d’un taux de rendement annuel (variable) pouvant atteindre les {{percentage}} %. Les fonds sont placés dans un coffre-fort DeFi qui génère des rendements sur des marchés de prêt audités — sans staking, sans réclamation, sans gel de fonds.",
+      "description_1": "Deposit mUSD into your Money account and earn up to {{percentage}}% APY (variable) automatically. Funds go into a DeFi vault, curated by Veda and Steakhouse Financial, that generates returns across audited lending markets. No staking, no claiming, no lock-ups.",
       "description_2": "Le solde de votre compte Money correspond à votre solde disponible. Associez votre carte MetaMask Card pour effectuer des achats auprès de plus de 150 millions de commerçants dans le monde entier. Votre argent continue de générer des revenus jusqu’à ce que vous le dépensiez.",
+      "description_3": "Money account is powered by Monad.",
       "faq_title": "Foire aux questions",
       "faq_placeholder_answer": "Bientôt disponible.",
       "faq_q1": "Comment fonctionne le taux de rendement annuel de {{percentage}} % ?",
@@ -7132,6 +7196,9 @@
       "last_used": "Dernière utilisation",
       "bank_and_card": "Banque et carte",
       "crypto": "Crypto",
+      "perps": "Perps",
+      "perps_account": "Perps account",
+      "add": "Add",
       "available_balance": "{{balance}} disponibles",
       "other_assets": "Autres actifs",
       "other_assets_description": "Sélectionnez parmi vos jetons"
@@ -7430,6 +7497,9 @@
     "title": "Passerelle",
     "submitting_transaction": "En train d’envoyer",
     "fetching_quote": "Récupération de la cotation",
+    "fee_includes": "Includes",
+    "fee_percentage": "{{feePercentage}}%",
+    "fee_percentage_meta_mask": "{{feePercentage}}% MM fee.",
     "fee_disclaimer": "Comprend {{feePercentage}} % de frais MetaMask.",
     "no_mm_fee": "Pas de frais MM",
     "token_suspicious": "Suspect",
@@ -7531,9 +7601,11 @@
   "account_status": {
     "account_already_exists": "Ce portefeuille existe déjà",
     "account_already_exists_description": "Un portefeuille utilisant « {{accountName}} » existe déjà. Voulez-vous essayer de vous y connecter à la place ?",
+    "account_already_exists_telegram_description": "A wallet is already linked to this Telegram account. Do you want to unlock this wallet?",
     "log_in": "Se connecter",
     "account_not_found": "Portefeuille introuvable",
     "account_not_found_description": "Nous n’avons pas trouvé de portefeuille pour « {{accountName}} ». Voulez-vous en créer un nouveau avec cet identifiant ?",
+    "account_not_found_telegram_description": "We couldn't find a wallet linked to this Telegram account. Do you want to create a new one with this login?",
     "create_new_wallet": "Créer un nouveau portefeuille",
     "use_different_login_method": "Utilisez une autre méthode de connexion",
     "account_already_exists_ios_new_user_description": "Un portefeuille ayant pour nom « {{accountName}} » existe déjà. Voulez-vous le déverrouiller ?",
@@ -8457,18 +8529,25 @@
     "main_title": "Récompenses",
     "vip": {
       "bps_unit": "points de base",
+      "badge_label": "VIP {{tier}}",
       "swaps_label": "Échanges",
       "perps_label": "Perps",
-      "error_title": "We couldn’t load your VIP dashboard",
-      "error_description": "Check your connection and try again.",
-      "retry_button": "Retry",
-      "tiers_title": "Tiers",
-      "tier_thresholds": "{{points}} total",
-      "bps_value": "{{bps}} bps",
+      "points_label": "Points",
+      "revenue_share_label": "Rev share",
+      "points_from_referrals_label": "Points from referrals",
+      "referrals_label": "VIP Referrals",
+      "tier_benefits_title": "Tier benefits",
+      "next_tier_value": "{{value}} next tier",
       "equity_rebate_label": "Equity rebate",
       "equity_rebate_header": "Equity rebate: {{value}}%",
       "equity_rebate_next_tier": "↑ {{value}}% at next tier",
-      "equity_rebate_top_tier": "Top tier reached."
+      "equity_rebate_top_tier": "Top tier reached.",
+      "error_title": "Nous n’avons pas pu charger votre tableau de bord VIP",
+      "error_description": "Vérifiez votre connexion et réessayez.",
+      "retry_button": "Réessayer",
+      "tiers_title": "Niveaux",
+      "tier_thresholds": "{{points}} total",
+      "bps_value": "{{bps}} points de base"
     },
     "referral_title": "Parrainages",
     "referral_stats_earned_from_referrals": "Gagnés grâce aux parrainages",
@@ -9332,5 +9411,8 @@
       "social": "Réseaux sociaux",
       "other": "Autre"
     }
+  },
+  "stepper_card": {
+    "more_information": "More information"
   }
 }
