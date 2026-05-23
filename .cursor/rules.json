@@ -1,0 +1,70 @@
+{
+  "version": "1.0.0",
+  "description": "Cursor IDE rules for metamask-mobile development",
+  "rules": [
+    {
+      "id": "no-console-log",
+      "description": "Avoid using console.log in production code. Use Logger utility instead.",
+      "severity": "warning",
+      "pattern": "console\\.log",
+      "message": "Use Logger.log() from app/util/Logger instead of console.log"
+    },
+    {
+      "id": "no-hardcoded-strings",
+      "description": "All user-facing strings must be localized via i18n.",
+      "severity": "error",
+      "message": "Use strings() from app/locales/i18n instead of hardcoded strings"
+    },
+    {
+      "id": "typescript-strict",
+      "description": "Enforce strict TypeScript types. Avoid using 'any'.",
+      "severity": "warning",
+      "pattern": ": any",
+      "message": "Avoid using 'any' type. Define explicit types or use 'unknown'."
+    },
+    {
+      "id": "no-direct-redux-state",
+      "description": "Access Redux state via selectors, not direct state access.",
+      "severity": "warning",
+      "message": "Use selectors from app/selectors/ to access Redux state"
+    },
+    {
+      "id": "secure-storage",
+      "description": "Never store sensitive data (keys, seeds, passwords) in AsyncStorage.",
+      "severity": "error",
+      "message": "Use SecureKeychain or Vault for sensitive data storage"
+    },
+    {
+      "id": "test-coverage",
+      "description": "New components and utilities must have corresponding test files.",
+      "severity": "warning",
+      "message": "Ensure a .test.ts or .test.tsx file exists for this module"
+    },
+    {
+      "id": "component-naming",
+      "description": "React components must use PascalCase naming.",
+      "severity": "error",
+      "message": "Component names must be PascalCase (e.g., MyComponent)"
+    },
+    {
+      "id": "no-inline-styles",
+      "description": "Avoid inline styles in React Native components. Use StyleSheet.create.",
+      "severity": "warning",
+      "message": "Use StyleSheet.create() for component styles instead of inline style objects"
+    }
+  ],
+  "ignore": [
+    "node_modules/**",
+    "__mocks__/**",
+    "*.test.ts",
+    "*.test.tsx",
+    "*.spec.ts",
+    "*.spec.tsx"
+  ],
+  "preferences": {
+    "preferFunctionalComponents": true,
+    "preferHooks": true,
+    "preferNamedExports": true,
+    "enforceAccessibility": true
+  }
+}
