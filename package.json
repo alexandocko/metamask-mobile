@@ -9,7 +9,7 @@
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "test": "jest",
-    "test:unit": "jest --testPathPattern='.*\\.test\\.(ts|tsx|js)$'",
+    "test:unit": "jest --testPathPattern='.*\.test\.(ts|tsx|js)$'",
     "test:e2e:android": "wdio wdio.conf.js --platform android",
     "test:e2e:ios": "wdio wdio.conf.js --platform ios",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
@@ -77,37 +77,4 @@
   "jest": {
     "preset": "react-native",
     "setupFilesAfterFramework": [
-      "@testing-library/jest-native/extend-expect"
-    ],
-    "transformIgnorePatterns": [
-      "node_modules/(?!(react-native|@react-native|@react-navigation|react-native-reanimated)/)"
-    ],
-    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"],
-    "collectCoverageFrom": [
-      "app/**/*.{ts,tsx}",
-      "!app/**/*.stories.{ts,tsx}",
-      "!app/**/*.d.ts"
-    ],
-    "coverageThreshold": {
-      "global": {
-        "branches": 50,
-        "functions": 50,
-        "lines": 50,
-        "statements": 50
-      }
-    }
-  },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,md}": [
-      "prettier --write"
-    ]
-  },
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=9.0.0"
-  }
-}
+      
