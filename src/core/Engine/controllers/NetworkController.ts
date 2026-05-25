@@ -59,6 +59,16 @@ const DEFAULT_NETWORKS: Record<string, NetworkConfig> = {
       blockExplorerUrl: 'https://sepolia.etherscan.io',
     },
   },
+  // Added Polygon as a default network since I use it frequently
+  polygon: {
+    chainId: ChainId.POLYGON,
+    rpcUrl: 'https://polygon-rpc.com/',
+    ticker: 'MATIC',
+    nickname: 'Polygon Mainnet',
+    rpcPrefs: {
+      blockExplorerUrl: 'https://polygonscan.com',
+    },
+  },
 };
 
 /**
@@ -127,22 +137,4 @@ export class NetworkController extends EventEmitter {
         [networkClientId]: config,
       },
     };
-    this.emit('networkConfigurationUpdated', { networkClientId, config });
-  }
-
-  /**
-   * Removes a custom network configuration by ID
-   * @param networkClientId - The ID of the network configuration to remove
-   */
-  removeNetworkConfiguration(networkClientId: string): void {
-    if (networkClientId === this.state.selectedNetworkClientId) {
-      throw new Error('Cannot remove the currently active network');
-    }
-    const { [networkClientId]: _removed, ...remaining } =
-      this.state.networkConfigurations;
-    this.state = { ...this.state, networkConfigurations: remaining };
-    this.emit('networkConfigurationRemoved', networkClientId);
-  }
-}
-
-export default NetworkController;
+    this.e
